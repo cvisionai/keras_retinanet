@@ -19,7 +19,7 @@ import keras
 import time
 import numpy as np
 import cv2
-import PIL
+import pillow as PIL
 
 
 def read_image_bgr(path):
@@ -27,23 +27,40 @@ def read_image_bgr(path):
     return image[:, :, ::-1].copy()
 
 
-def preprocess_image(x):
+def preprocess_image(x, mean_image=None):
     # mostly identical to "https://github.com/fchollet/keras/blob/master/keras/applications/imagenet_utils.py"
     # except for converting RGB -> BGR since we assume BGR already
     x = x.astype(keras.backend.floatx())
     if keras.backend.image_data_format() == 'channels_first':
         if x.ndim == 3:
-            x[0, :, :] -= 103.939
-            x[1, :, :] -= 116.779
-            x[2, :, :] -= 123.68
+            if mean_image is not None:
+                mean_image = mean_image[::-1]
+                x[0, :, :] -= mean_image[0, :, :]
+                x[1, :, :] -= mean_image[1, :, :]
+                x[2, :, :] -= mean_image[2, :, :]
+            else:
+                x[0, :, :] -= 0 #103.939
+                x[1, :, :] -= 0 #116.779
+                x[2, :, :] -= 0 #123.68
         else:
-            x[:, 0, :, :] -= 103.939
-            x[:, 1, :, :] -= 116.779
-            x[:, 2, :, :] -= 123.68
+            if mean_image is not None:
+                mean_image = mean_image[::-1]
+                x[:, 0, :, :] -= mean_image[0, :, :]
+                x[:, 1, :, :] -= mean_image[1, :, :]
+                x[:, 2, :, :] -= mean_image[2, :, :]
+            else:
+                x[:, 0, :, :] -= 0 #103.939
+                x[:, 1, :, :] -= 0 #116.779
+                x[:, 2, :, :] -= 0 #123.68
     else:
-        x[..., 0] -= 103.939
-        x[..., 1] -= 116.779
-        x[..., 2] -= 123.68
+        if mean_image is not None:
+            x[..., 0] -= mean_image[:, :, 0]
+            x[..., 1] -= mean_image[:, :, 1]
+            x[..., 2] -= mean_image[:, :, 2]
+        else:
+            x[..., 0] -= 0 #103.939
+            x[..., 1] -= 0 #116.779
+            x[..., 2] -= 0 #123.68
 
     return x
 
@@ -101,7 +118,6 @@ def resize_image(img, min_side=600, max_side=1024):
     largest_side = max(rows, cols)
     if largest_side * scale > max_side:
         scale = max_side / largest_side
-
     # resize the image with the computed scale
     img = cv2.resize(img, None, fx=scale, fy=scale)
 

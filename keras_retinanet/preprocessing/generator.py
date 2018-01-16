@@ -33,8 +33,8 @@ class Generator(object):
         batch_size=1,
         group_method='ratio',  # one of 'none', 'random', 'ratio'
         shuffle_groups=True,
-        image_min_side=600,
-        image_max_side=1024,
+        image_min_side=1080,
+        image_max_side=1920,
         seed=None
     ):
         self.image_data_generator = image_data_generator
@@ -110,7 +110,7 @@ class Generator(object):
         return resize_image(image, min_side=self.image_min_side, max_side=self.image_max_side)
 
     def preprocess_image(self, image):
-        return preprocess_image(image)
+        return preprocess_image(image, mean_image=self.mean_image)
 
     def preprocess_group(self, image_group, annotations_group):
         for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):

@@ -108,6 +108,7 @@ class CSVGenerator(Generator):
         self,
         csv_data_file,
         csv_class_file,
+        mean_image_file,
         image_data_generator,
         base_dir=None,
         **kwargs
@@ -115,6 +116,7 @@ class CSVGenerator(Generator):
         self.image_names = []
         self.image_data  = {}
         self.base_dir    = base_dir
+        self.mean_image = np.load(mean_image_file)
 
         # Take base_dir from annotations file if not explicitly specified.
         if self.base_dir is None:
@@ -161,7 +163,7 @@ class CSVGenerator(Generator):
         image = Image.open(self.image_path(image_index))
         return float(image.width) / float(image.height)
 
-    def load_image(self, image_index):
+    def load_image(self):
         return read_image_bgr(self.image_path(image_index))
 
     def load_annotations(self, image_index):
