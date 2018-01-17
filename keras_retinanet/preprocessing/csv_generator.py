@@ -163,7 +163,7 @@ class CSVGenerator(Generator):
         image = Image.open(self.image_path(image_index))
         return float(image.width) / float(image.height)
 
-    def load_image(self):
+    def load_image(self, image_index):
         return read_image_bgr(self.image_path(image_index))
 
     def load_annotations(self, image_index):
