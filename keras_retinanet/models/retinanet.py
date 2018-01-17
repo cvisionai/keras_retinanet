@@ -27,6 +27,7 @@ custom_objects = {
     'RegressBoxes'          : layers.RegressBoxes,
     'NonMaximumSuppression' : layers.NonMaximumSuppression,
     'Anchors'               : layers.Anchors,
+    'DropoutBayes'          : layers.DropoutBayes,
     '_smooth_l1'            : losses.smooth_l1(),
     '_focal'                : losses.focal(),
 }
@@ -37,6 +38,7 @@ def default_classification_model(
     num_anchors,
     pyramid_feature_size=256,
     prior_probability=0.01,
+    dropout_probability=0.5,
     classification_feature_size=256,
     name='classification_submodel'
 ):
@@ -57,6 +59,7 @@ def default_classification_model(
             bias_initializer='zeros',
             **options
         )(outputs)
+        outputs = layers.DropoutBayes(dropout_probability)(outputs)
 
     outputs = keras.layers.Conv2D(
         filters=num_classes * num_anchors,
@@ -65,6 +68,7 @@ def default_classification_model(
         name='pyramid_classification',
         **options
     )(outputs)
+    outputs = layers.DropoutBayes(dropout_probability) (outputs)
 
     # reshape output and apply sigmoid
     outputs = keras.layers.Reshape((-1, num_classes), name='pyramid_classification_reshape')(outputs)
