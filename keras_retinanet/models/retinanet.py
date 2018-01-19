@@ -60,7 +60,6 @@ def default_classification_model(
             **options
         )(outputs)
         outputs = layers.DropoutBayes(dropout_probability)(outputs)
-        outputs = keras.layers.Lambda(lambda x: x * dropout_probability) (outputs)        
 
     outputs = keras.layers.Conv2D(
         filters=num_classes * num_anchors,
@@ -70,7 +69,6 @@ def default_classification_model(
         **options
     )(outputs)
     outputs = dropout_probability * layers.DropoutBayes(dropout_probability) (outputs)
-    outputs = keras.layers.Lambda(lambda x: x * dropout_probability) (outputs)
 
     # reshape output and apply sigmoid
     outputs = keras.layers.Reshape((-1, num_classes), name='pyramid_classification_reshape')(outputs)
@@ -178,7 +176,6 @@ def __build_anchors(anchor_parameters, features):
             name='anchors_{}'.format(i)
         )(f))
     return keras.layers.Concatenate(axis=1)(anchors)
-
 
 def retinanet(
     inputs,
