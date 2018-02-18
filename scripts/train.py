@@ -28,7 +28,7 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.models.resnet import ResNet50RetinaNet
+from keras_retinanet.models.resnet import ResNet152RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 
 
@@ -46,10 +46,10 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0):
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+            model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+        model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = model
 
     # append NMS for prediction only
@@ -78,7 +78,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     checkpoint = keras.callbacks.ModelCheckpoint(
         os.path.join(
             snapshot_path,
-            'resnet50_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
+            'resnet152_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
         ),
         verbose=1
     )
@@ -143,7 +143,9 @@ def create_generators(args):
             args.classes,
             args.mean_image,
             train_image_data_generator,
-            batch_size=args.batch_size
+            batch_size=args.batch_size,
+            image_min_side=1466,
+            image_max_side=2200
         )
 
         if args.val_annotations:
@@ -174,8 +176,7 @@ def check_args(parsed_args):
 
     if parsed_args.multi_gpu > 1 and parsed_args.batch_size < parsed_args.multi_gpu:
         raise ValueError(
-            "Batch size ({}) must be equal to or higher than the number of GPUs ({})".format(parsed_args.batch_size,
-                                                                                             parsed_args.multi_gpu))
+            "Batch size ({}) must be equal to or higher than the number of GPUs ({})".format(parsed_args.batch_size, parsed_args.multi_gpu))
 
     return parsed_args
 
@@ -233,8 +234,8 @@ if __name__ == '__main__':
     # start training
     training_model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=10000,
-        epochs=50,
+        steps_per_epoch=1000,
+        epochs=500,
         verbose=1,
         callbacks=callbacks,
     )

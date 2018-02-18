@@ -68,7 +68,7 @@ def default_classification_model(
         name='pyramid_classification',
         **options
     )(outputs)
-    outputs = dropout_probability * layers.DropoutBayes(dropout_probability) (outputs)
+    outputs = layers.DropoutBayes(dropout_probability) (outputs)
 
     # reshape output and apply sigmoid
     outputs = keras.layers.Reshape((-1, num_classes), name='pyramid_classification_reshape')(outputs)
