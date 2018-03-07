@@ -38,7 +38,7 @@ def default_classification_model(
     num_anchors,
     pyramid_feature_size=256,
     prior_probability=0.01,
-    dropout_probability=0.5,
+    dropout_probability=0.001,
     classification_feature_size=256,
     name='classification_submodel'
 ):
