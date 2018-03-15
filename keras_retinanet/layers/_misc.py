@@ -162,7 +162,7 @@ class RegressBoxes(keras.layers.Layer):
             'std' : self.std.tolist(),
         }
 
-class DropoutBayes(Layer):
+class DropoutBayes(keras.layers.Layer):
     """Applies Dropout to the input.
     Dropout consists in randomly setting
     a fraction `rate` of input units to 0 at each update during training time,
