@@ -71,7 +71,13 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0):
     return model, training_model, prediction_model
 
 
-def create_callbacks(model, training_model, prediction_model, validation_generator, dataset_type, snapshot_path):
+def create_callbacks(
+        model,
+        training_model,
+        prediction_model,
+        validation_generator,
+        dataset_type,
+        snapshot_path):
     callbacks = []
 
     # save the prediction model
@@ -93,7 +99,15 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
-    lr_scheduler = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.1, patience=2, verbose=1, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0)
+    lr_scheduler = keras.callbacks.ReduceLROnPlateau(
+        monitor='loss',
+        factor=0.1,
+        patience=2,
+        verbose=1,
+        mode='auto',
+        epsilon=0.0001,
+        cooldown=0,
+        min_lr=0)
     callbacks.append(lr_scheduler)
 
     return callbacks
@@ -144,8 +158,8 @@ def create_generators(args):
             args.mean_image,
             train_image_data_generator,
             batch_size=args.batch_size,
-            image_min_side=1466,
-            image_max_side=2200
+            image_min_side=args.image_min_side,
+            image_max_side=args.image_max_side
         )
 
         if args.val_annotations:
@@ -197,6 +211,8 @@ def parse_args():
     csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
     csv_parser.add_argument('mean_image',help='Path to mean image of data set to subtract (optional).')
     csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
+    csv_parser.add_argument('--image_min_side', default=1080, help='Length of minimum image side. Image will be scaled to this')
+    csv_parser.add_argument('--image_max_side', default=1920, help='Length of maximum image side. Image will be scaled to this')
 
     parser.add_argument('--weights', help='Weights to use for initialization (defaults to ImageNet).', default='imagenet')
     parser.add_argument('--batch-size', help='Size of the batches.', default=1, type=int)
