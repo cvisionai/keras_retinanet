@@ -107,14 +107,14 @@ if __name__ == '__main__':
 
         # compute predicted labels and scores
         for detection in detections[0, ...]:
-            positive_labels = np.where(detection[4:] > args.score_threshold)[0]
-
+            label = np.argmax(detection[4:])
             # append detections for each positively labeled class
-            for label in positive_labels:
+            if float(detection[4 + label]) > args.score_threshold:
                 image_result = {
                     'image_id'    : test_generator.image_names[i],
                     'category_id' : test_generator.label_to_name(label),
-                    'score'       : float(detection[4 + label]),
+                    'scores'      : [float(det) for i,det in 
+                                     enumerate(detection) if i >= 4],
                     'bbox'        : (detection[:4]).tolist(),
                 }
                 # append detection to results
