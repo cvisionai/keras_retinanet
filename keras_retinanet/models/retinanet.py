@@ -59,7 +59,7 @@ def default_classification_model(
             bias_initializer='zeros',
             **options
         )(outputs)
-        outputs = layers.DropoutBayes(dropout_probability)(outputs)
+        #outputs = layers.DropoutBayes(dropout_probability)(outputs)
 
     outputs = keras.layers.Conv2D(
         filters=num_classes * num_anchors,
@@ -68,7 +68,7 @@ def default_classification_model(
         name='pyramid_classification',
         **options
     )(outputs)
-    outputs = layers.DropoutBayes(dropout_probability) (outputs)
+    #outputs = layers.DropoutBayes(dropout_probability) (outputs)
 
     # reshape output and apply sigmoid
     outputs = keras.layers.Reshape((-1, num_classes), name='pyramid_classification_reshape')(outputs)
