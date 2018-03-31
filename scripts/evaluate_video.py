@@ -145,10 +145,8 @@ if __name__ == '__main__':
 
         # compute predicted labels and scores
         for detection in detections[0, ...]:
-            positive_labels = np.where(detection[4:] > args.score_threshold)[0]
-
-            # append detections for each positively labeled class
-            for label in positive_labels:
+            label = np.argmax(detection[4:])
+            if float(detection[4 + label]) > args.score_threshold:
                 image_result = {
                     'frame'       : frame,
                     'category_id' : label,
@@ -156,7 +154,6 @@ if __name__ == '__main__':
                                       enumerate(detection) if i >=4],
                     'bbox'        : (detection[:4]).tolist(),
                 }
-
                 # append detection to results
                 results.append(image_result)
 
@@ -165,9 +162,9 @@ if __name__ == '__main__':
         out_name = re.split(".mp4",args.video_path.split('/')[-1],flags=re.IGNORECASE)[0]
         try:
             #json.dump(results, open('{}_bbox_results.json'.format(out_name), 'w'), indent=4)
-            pickle.dump(results,open('{}_bbox_results_03.pickle'.format(out_name),'wb'))
+            pickle.dump(results,open('{}_bbox_results_{}.pickle'.format(out_name, args.score_threshold),'wb'))
         except:
-            pickle.dump(results,open('default_10794_bbox_results_2.pickle','wb'))
+            pickle.dump(results,open('default_bbox_results.pickle','wb'))
             #json.dump(results, open('default_bbox_results.json', 'w'), indent=4)
 
     frame_stop_event.set()
