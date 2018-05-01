@@ -15,15 +15,15 @@ limitations under the License.
 """
 
 from __future__ import division
-import keras
+from PIL import Image
 import time
+import keras
 import numpy as np
 import cv2
-import PIL
 
 
 def read_image_bgr(path):
-    image = np.asarray(PIL.Image.open(path).convert('RGB'))
+    image = np.asarray(Image.open(path).convert('RGB'))
     return image[:, :, ::-1].copy()
 
 

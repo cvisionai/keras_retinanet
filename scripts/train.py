@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+from PIL import Image
 import argparse
 import os
 
@@ -28,7 +28,7 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.models.resnet import ResNet152RetinaNet
+from keras_retinanet.models.resnet import ResNet50RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 
 
@@ -46,17 +46,17 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0):
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+            model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+        model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = model
 
     # append NMS for prediction only
     classification   = model.outputs[1]
     detections       = model.outputs[2]
     boxes            = keras.layers.Lambda(lambda x: x[:, :, :4])(detections)
-    detections       = keras_retinanet.layers.NonMaximumSuppression(name='nms')([boxes, classification, detections])
+    detections       = keras_retinanet.layers.NonMaximumSuppression(name='nms')([boxes, classification, detections]) #max boxes and nms threshold set here
     prediction_model = keras.models.Model(inputs=model.inputs, outputs=model.outputs[:2] + [detections])
 
     # compile model
@@ -84,7 +84,7 @@ def create_callbacks(
     checkpoint = keras.callbacks.ModelCheckpoint(
         os.path.join(
             snapshot_path,
-            'resnet152_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
+            'resnet50_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
         ),
         verbose=1
     )
@@ -158,8 +158,8 @@ def create_generators(args):
             args.mean_image,
             train_image_data_generator,
             batch_size=args.batch_size,
-            image_min_side=args.image_min_side,
-            image_max_side=args.image_max_side
+            image_min_side=int(args.image_min_side),
+            image_max_side=int(args.image_max_side)
         )
 
         if args.val_annotations:
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     model, training_model, prediction_model = create_models(num_classes=train_generator.num_classes(), weights=args.weights, multi_gpu=args.multi_gpu)
 
     # print model summary
-    print(model.summary())
+    #print(model.summary())
 
     # create the callbacks
     callbacks = create_callbacks(model, training_model, prediction_model, validation_generator, args.dataset_type, args.snapshot_path)
@@ -250,8 +250,8 @@ if __name__ == '__main__':
     # start training
     training_model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=1000,
-        epochs=500,
+        steps_per_epoch=10000,
+        epochs=50,
         verbose=1,
         callbacks=callbacks,
     )
