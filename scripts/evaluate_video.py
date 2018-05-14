@@ -50,7 +50,7 @@ def read_frames(img_path, raw_frame_queue, stop_event):
     else:
         vid_len = int(vid.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
         fps = vid.get(cv2.cv.CV_CAP_PROP_FPS)
-    frame_num = 1
+    frame_num = 0
     while ok and not stop_event.is_set():
         if not raw_frame_queue.full():
             ok,img = vid.read()
