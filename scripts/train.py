@@ -16,6 +16,8 @@ limitations under the License.
 from PIL import Image
 import argparse
 import os
+from multiprocessing import Queue
+from multiprocessing import Process
 
 import keras
 import keras.preprocessing.image
@@ -28,9 +30,23 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.models.resnet import ResNet50RetinaNet
+from keras_retinanet.models.resnet import ResNet152RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 
+def generator(batch_queue):
+    """ Yields data batches from a queue.
+        Inputs:
+        batch_queue - Queue containing tuples of images pairs and labels.
+    """
+    while True:
+        yield batch_queue.get(True, None)
+
+def provider(data_provider):
+    """ Pushes data onto the queue.
+        Inputs:
+        data_provider - A CSVGenerator object.
+    """
+    data_provider.start()
 
 def get_session():
     config = tf.ConfigProto()
@@ -46,10 +62,10 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0):
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+            model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+        model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = model
 
     # append NMS for prediction only
@@ -77,19 +93,34 @@ def create_callbacks(
         prediction_model,
         validation_generator,
         dataset_type,
-        snapshot_path):
+        snapshot_path,
+        args):
     callbacks = []
 
     # save the prediction model
     checkpoint = keras.callbacks.ModelCheckpoint(
         os.path.join(
             snapshot_path,
-            'resnet50_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
+            'resnet152_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
         ),
         verbose=1
     )
     checkpoint = RedirectModel(checkpoint, prediction_model)
     callbacks.append(checkpoint)
+
+    if args.log_dir:
+        tensorboard_callback = keras.callbacks.TensorBoard(
+            log_dir                 = args.log_dir,
+            histogram_freq          = 0,
+            batch_size              = args.batch_size,
+            write_graph             = True,
+            write_grads             = False,
+            write_images            = False,
+            embeddings_freq         = 0,
+            embeddings_layer_names  = None,
+            embeddings_metadata     = None
+        )
+        callbacks.append(tensorboard_callback)
 
     if dataset_type == 'coco':
         import keras_retinanet.callbacks.coco
@@ -113,10 +144,18 @@ def create_callbacks(
     return callbacks
 
 
-def create_generators(args):
+def create_generators(args,batch_queue):
     # create image data generator objects
+    '''
     train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
         horizontal_flip=True,
+        vertical_flip=True,
+        zoom_range=0.15,
+        rotation_range=25
+    )
+    '''
+    train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
+        horizontal_flip=True
     )
     val_image_data_generator = keras.preprocessing.image.ImageDataGenerator()
 
@@ -159,7 +198,8 @@ def create_generators(args):
             train_image_data_generator,
             batch_size=args.batch_size,
             image_min_side=int(args.image_min_side),
-            image_max_side=int(args.image_max_side)
+            image_max_side=int(args.image_max_side),
+            batch_queue=batch_queue
         )
 
         if args.val_annotations:
@@ -219,6 +259,7 @@ def parse_args():
     parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
     parser.add_argument('--multi-gpu', help='Number of GPUs to use for parallel processing.', type=int, default=0)
     parser.add_argument('--snapshot-path', help='Path to store snapshots of models during training (defaults to \'./snapshots\')', default='./snapshots')
+    parser.add_argument('--log-dir', default=None, help='path to store tensorboard logs')
 
     return check_args(parser.parse_args())
 
@@ -234,9 +275,14 @@ if __name__ == '__main__':
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     keras.backend.tensorflow_backend.set_session(get_session())
 
+    train_queue = Queue(10)
     # create the generators
-    train_generator, validation_generator = create_generators(args)
+    train_generator, validation_generator = create_generators(args,train_queue)
 
+    train_process = Process(target=provider, args=(train_generator,))
+    train_process.daemon = True
+    train_process.start()
+    train_data_generator = generator(train_queue)
     # create the model
     print('Creating model, this may take a second...')
     model, training_model, prediction_model = create_models(num_classes=train_generator.num_classes(), weights=args.weights, multi_gpu=args.multi_gpu)
@@ -245,13 +291,17 @@ if __name__ == '__main__':
     #print(model.summary())
 
     # create the callbacks
-    callbacks = create_callbacks(model, training_model, prediction_model, validation_generator, args.dataset_type, args.snapshot_path)
+    callbacks = create_callbacks(model, training_model, prediction_model, validation_generator, args.dataset_type, args.snapshot_path, args)
+
 
     # start training
     training_model.fit_generator(
-        generator=train_generator,
+        generator=train_data_generator,
         steps_per_epoch=10000,
-        epochs=50,
+        epochs=100,
         verbose=1,
         callbacks=callbacks,
     )
+
+    train_process.terminate()
+    train_process.join()

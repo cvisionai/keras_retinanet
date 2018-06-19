@@ -94,6 +94,8 @@ def random_transform(
 
         # find bounding box again in augmented image
         [i, j] = np.where(mask == 255)
+
+        assert(len(i) > 0 and len(j) > 0), 'Annotation transformed outside of new image: {}'.format(b)
         boxes[index, 0] = float(min(j))
         boxes[index, 1] = float(min(i))
         boxes[index, 2] = float(max(j)) + 1  # set box to an open interval [min, max)
