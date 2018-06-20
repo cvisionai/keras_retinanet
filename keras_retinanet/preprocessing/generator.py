@@ -35,12 +35,12 @@ class Generator(object):
         shuffle_groups=True,
         image_min_side=1080,
         image_max_side=1920,
-        batch_queue=None,
+        group_queeue=None,
         seed=None
     ):
         self.image_data_generator = image_data_generator
         self.batch_size           = int(batch_size)
-        self.batch_queue          = batch_queue
+        self.group_queue          = group_queue
         self.group_method         = group_method
         self.shuffle_groups       = shuffle_groups
         self.image_min_side       = image_min_side
@@ -223,9 +223,8 @@ class Generator(object):
             # shuffle groups at start of epoch
             random.shuffle(self.groups)
         group = self.groups[self.group_index]
+        self.group_queue.put(group)
         self.group_index = (self.group_index + 1) % len(self.groups)
-        #return self.compute_input_output(group)
-        self.batch_queue.put(self.compute_input_output(group))
 
     def start(self):
         """ Starts pushing data onto queue.
