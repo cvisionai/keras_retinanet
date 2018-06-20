@@ -30,6 +30,7 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+from keras_retinanet.preprocessing.image_preprocessor import ImagePreProcessor
 from keras_retinanet.models.resnet import ResNet152RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 
@@ -144,7 +145,7 @@ def create_callbacks(
     return callbacks
 
 
-def create_generators(args,batch_queue):
+def create_generators(args,group_queue):
     # create image data generator objects
     '''
     train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
@@ -199,7 +200,7 @@ def create_generators(args,batch_queue):
             batch_size=args.batch_size,
             image_min_side=int(args.image_min_side),
             image_max_side=int(args.image_max_side),
-            batch_queue=batch_queue
+            group_queue=group_queue
         )
 
         if args.val_annotations:
@@ -275,14 +276,36 @@ if __name__ == '__main__':
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     keras.backend.tensorflow_backend.set_session(get_session())
 
-    train_queue = Queue(10)
+    group_queue = Queue(10)
+    image_queue = Queue(10)
     # create the generators
-    train_generator, validation_generator = create_generators(args,train_queue)
+    train_generator, validation_generator = create_generators(args,group_queue)
 
     train_process = Process(target=provider, args=(train_generator,))
     train_process.daemon = True
     train_process.start()
-    train_data_generator = generator(train_queue)
+    train_data_generator = generator(image_queue)
+    img_processes = []
+    for num in range(args.num_processors):
+        image_data_generator = keras.preprocessing.image.ImageDataGenerator(
+            horizontal_flip=True
+        )
+        data_generator = ImagePreProcessor(
+            args.annotations,
+            args.classes,
+            args.mean_image,
+            train_image_data_generator,
+            group_queue,
+            image_queue,
+            batch_size=args.batch_size,
+            image_min_side=int(args.image_min_side),
+            image_max_side=int(args.image_max_side),
+        )
+        image_process = Process(target=provider, args=(data_generator,))
+        image_process.daemon = True
+        image_process.start()
+        img_processes.append(image_process)
+
     # create the model
     print('Creating model, this may take a second...')
     model, training_model, prediction_model = create_models(num_classes=train_generator.num_classes(), weights=args.weights, multi_gpu=args.multi_gpu)
@@ -303,5 +326,8 @@ if __name__ == '__main__':
         callbacks=callbacks,
     )
 
+    for proc in img_processes:
+        proc.terminate()
+        proc.join()
     train_process.terminate()
     train_process.join()
