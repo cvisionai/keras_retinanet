@@ -261,6 +261,7 @@ def parse_args():
     parser.add_argument('--multi-gpu', help='Number of GPUs to use for parallel processing.', type=int, default=0)
     parser.add_argument('--snapshot-path', help='Path to store snapshots of models during training (defaults to \'./snapshots\')', default='./snapshots')
     parser.add_argument('--log-dir', default=None, help='path to store tensorboard logs')
+    parser.add_argument('--num_processors', default=8, help='Number of image preprocessing objects')
 
     return check_args(parser.parse_args())
 
@@ -294,7 +295,7 @@ if __name__ == '__main__':
             args.annotations,
             args.classes,
             args.mean_image,
-            train_image_data_generator,
+            image_data_generator,
             group_queue,
             image_queue,
             batch_size=args.batch_size,

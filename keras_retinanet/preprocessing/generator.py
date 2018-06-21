@@ -35,7 +35,7 @@ class Generator(object):
         shuffle_groups=True,
         image_min_side=1080,
         image_max_side=1920,
-        group_queeue=None,
+        group_queue=None,
         seed=None
     ):
         self.image_data_generator = image_data_generator
