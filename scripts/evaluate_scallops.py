@@ -53,6 +53,8 @@ def parse_args():
     parser.add_argument('mean_image', help='Mean image file to subtract')
     parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
     parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.05).', default=0.05, type=float)
+    parser.add_argument('--image_min_side', help='Minimum image side to rescale input to', default=1100, type=int)
+    parser.add_argument('--image_max_side', help='Maximum image side to rescale input to', default=1650, type=int)
 
     return parser.parse_args()
 
@@ -80,7 +82,9 @@ if __name__ == '__main__':
         args.test_path,
         args.class_file,
         args.mean_image,
-        test_image_data_generator)
+        test_image_data_generator,
+        image_min_side=args.image_min_side,
+        image_max_side=args.image_max_side)
     # start collecting results
     results = []
     image_ids = []
