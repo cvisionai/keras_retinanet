@@ -13,6 +13,8 @@ import csv
 import sys
 import os.path
 
+from .csv_generator import CSVGenerator
+
 class ImagePreProcessor(CSVGenerator):
     def __init__(
         self,

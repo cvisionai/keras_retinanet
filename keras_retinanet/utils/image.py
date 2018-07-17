@@ -79,6 +79,7 @@ def random_transform(
     # set fill mode so that masks are not enlarged
     fill_mode = image_data_generator.fill_mode
     image_data_generator.fill_mode = 'constant'
+    invalid_boxes = []
 
     for index in range(boxes.shape[0]):
         # generate box mask and randomly transform it
@@ -86,7 +87,8 @@ def random_transform(
         b = boxes[index, :4].astype(int)
 
         assert(b[0] < b[2] and b[1] < b[3]), 'Annotations contain invalid box: {}'.format(b)
-        assert(b[2] <= image.shape[1] and b[3] <= image.shape[0]), 'Annotation ({}) is outside of image shape ({}).'.format(b, image.shape)
+        assert(b[2] <= image.shape[1] and b[3] <= image.shape[0]), \
+                'Annotation ({}) is outside of image shape ({}).'.format(b, image.shape)
 
         mask[b[1]:b[3], b[0]:b[2], :] = 255
         mask = image_data_generator.random_transform(mask, seed=seed)[..., 0]
@@ -94,12 +96,21 @@ def random_transform(
 
         # find bounding box again in augmented image
         [i, j] = np.where(mask == 255)
-
-        assert(len(i) > 0 and len(j) > 0), 'Annotation transformed outside of new image: {}'.format(b)
+        if (len(i)== 0) or (len(j) == 0):
+           # print('Annotation transformed outside of new image: {}'.format(b))
+           invalid_boxes.append(index)
+           continue
         boxes[index, 0] = float(min(j))
         boxes[index, 1] = float(min(i))
         boxes[index, 2] = float(max(j)) + 1  # set box to an open interval [min, max)
         boxes[index, 3] = float(max(i)) + 1  # set box to an open interval [min, max)
+
+    invalid_boxes = sorted(invalid_boxes,reverse=True)
+    if len(invalid_boxes) == len(boxes):
+        print("Deleted all boxes")
+    boxes = np.delete(boxes,invalid_boxes,axis=0)
+    #for box_elem in invalid_boxes:
+    #    del boxes[box_elem]
 
     # restore fill_mode
     image_data_generator.fill_mode = fill_mode

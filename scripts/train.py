@@ -147,17 +147,15 @@ def create_callbacks(
 
 def create_generators(args,group_queue):
     # create image data generator objects
-    '''
     train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
         horizontal_flip=True,
         vertical_flip=True,
         zoom_range=0.15,
         rotation_range=25
     )
-    '''
-    train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
-        horizontal_flip=True
-    )
+#    train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
+#        horizontal_flip=True
+#    )
     val_image_data_generator = keras.preprocessing.image.ImageDataGenerator()
 
     if args.dataset_type == 'coco':
@@ -261,7 +259,7 @@ def parse_args():
     parser.add_argument('--multi-gpu', help='Number of GPUs to use for parallel processing.', type=int, default=0)
     parser.add_argument('--snapshot-path', help='Path to store snapshots of models during training (defaults to \'./snapshots\')', default='./snapshots')
     parser.add_argument('--log-dir', default=None, help='path to store tensorboard logs')
-    parser.add_argument('--num_processors', default=8, help='Number of image preprocessing objects')
+    parser.add_argument('--num_processors', type=int, default=8, help='Number of image preprocessing objects')
 
     return check_args(parser.parse_args())
 
@@ -277,8 +275,8 @@ if __name__ == '__main__':
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     keras.backend.tensorflow_backend.set_session(get_session())
 
-    group_queue = Queue(10)
-    image_queue = Queue(10)
+    group_queue = Queue(20)
+    image_queue = Queue(20)
     # create the generators
     train_generator, validation_generator = create_generators(args,group_queue)
 
@@ -289,8 +287,12 @@ if __name__ == '__main__':
     img_processes = []
     for num in range(args.num_processors):
         image_data_generator = keras.preprocessing.image.ImageDataGenerator(
-            horizontal_flip=True
-        )
+            horizontal_flip=True,
+            vertical_flip=True,
+            zoom_range=0.15,
+            rotation_range=25
+            )
+
         data_generator = ImagePreProcessor(
             args.annotations,
             args.classes,
@@ -321,8 +323,8 @@ if __name__ == '__main__':
     # start training
     training_model.fit_generator(
         generator=train_data_generator,
-        steps_per_epoch=10000,
-        epochs=100,
+        steps_per_epoch=500,
+        epochs=500,
         verbose=1,
         callbacks=callbacks,
     )

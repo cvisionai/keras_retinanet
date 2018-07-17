@@ -96,11 +96,13 @@ class Generator(object):
 
             # delete invalid indices
             if len(invalid_indices):
+                '''
                 warnings.warn('Image with id {} (shape {}) contains the following invalid boxes: {}.'.format(
                     group[index],
                     image.shape,
                     [annotations[invalid_index, :] for invalid_index in invalid_indices]
                 ))
+                '''
                 annotations_group[index] = np.delete(annotations, invalid_indices, axis=0)
 
         return image_group, annotations_group

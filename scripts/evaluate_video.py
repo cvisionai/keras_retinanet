@@ -20,7 +20,7 @@ import keras
 import keras.preprocessing.image
 from keras_retinanet.models.resnet import custom_objects
 from keras_retinanet.utils.keras_version import check_keras_version
-
+from keras_retinanet.utils.image import resize_image
 import tensorflow as tf
 import numpy as np
 import argparse
@@ -39,6 +39,7 @@ def format_img(img,mean_image):
     img[:, :, 0] -= mean_image[:,:,0]
     img[:, :, 1] -= mean_image[:,:,1]
     img[:, :, 2] -= mean_image[:,:,2]
+    img, scale = resize_image(img, args.min_side, args.max_side)
     return img
 
 def read_frames(img_path, raw_frame_queue, stop_event):
@@ -79,12 +80,31 @@ def get_session():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Testing script for testing video data.')
+    parser = argparse.ArgumentParser(
+            description='Testing script for testing video data.')
     parser.add_argument('model', help='Path to RetinaNet model.')
-    parser.add_argument('video_path', help='Path to COCO directory (ie. /tmp/COCO).')
-    parser.add_argument('mean_image',help='Path to mean image to subtract')
-    parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
-    parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.7).', default=0.7, type=float)
+    parser.add_argument('video_path', 
+            help='Path to COCO directory (ie. /tmp/COCO).')
+    parser.add_argument('mean_image',
+            help='Path to mean image to subtract')
+    parser.add_argument('--gpu', 
+            help='Id of the GPU to use (as reported by nvidia-smi).')
+    parser.add_argument('--score-threshold', 
+            help='Threshold to filter detections', 
+            default=0.7, 
+            type=float)
+    parser.add_argument('--min_side', 
+            help='Image min side', 
+            default=720, 
+            type=int)
+    parser.add_argument('--max_side', 
+            help='Image max side', 
+            default=1280, 
+            type=int)
+    parser.add_argument('--scale', 
+            help='Image resized scale to original', 
+            default = 0.666666, 
+            type=float)
 
     return parser.parse_args()
 
@@ -137,7 +157,8 @@ if __name__ == '__main__':
         detections[:, :, 3] = np.minimum(image.shape[0], detections[:, :, 3])
 
         # correct boxes for image scale
-        #detections[0, :, :4] /= scale
+        scale = args.scale
+        detections[0, :, :4] /= scale
 
         # change to (x, y, w, h) (MS COCO standard)
         detections[:, :, 2] -= detections[:, :, 0]
