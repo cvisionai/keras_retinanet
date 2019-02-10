@@ -118,8 +118,6 @@ class Generator(object):
 
     def preprocess_group(self, image_group, annotations_group):
         for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
-            # preprocess the image (subtract imagenet mean)
-            image = self.preprocess_image(image)
 
             # randomly transform both image and annotations
             image, annotations = random_transform(image, annotations, self.image_data_generator)
@@ -127,6 +125,8 @@ class Generator(object):
             # resize image
             image, image_scale = self.resize_image(image)
 
+            # preprocess the image (subtract imagenet mean)
+            image = self.preprocess_image(image)
             # apply resizing to annotations too
             annotations[:, :4] *= image_scale
 

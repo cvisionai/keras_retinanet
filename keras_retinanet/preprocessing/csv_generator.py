@@ -17,6 +17,7 @@ limitations under the License.
 
 from .generator import Generator
 from ..utils.image import read_image_bgr
+from ..utils.image import resize_image
 
 import numpy as np
 from PIL import Image
@@ -116,8 +117,11 @@ class CSVGenerator(Generator):
         self.image_names = []
         self.image_data  = {}
         self.base_dir    = base_dir
-        self.mean_image = np.load(mean_image_file)
-
+        if mean_image_file is not None:
+            self.mean_image = np.load(mean_image_file)
+            self.mean_image,_ = resize_image(self.mean_image, min_side=kwargs.get('image_min_side'),max_side=kwargs.get('image_max_side')) 
+        else:
+            self.mean_image = None
         # Take base_dir from annotations file if not explicitly specified.
         if self.base_dir is None:
             self.base_dir = os.path.dirname(csv_data_file)
@@ -165,7 +169,12 @@ class CSVGenerator(Generator):
 
     def load_image(self, image_index):
         img = read_image_bgr(self.image_path(image_index))
-        assert img.shape == self.mean_image.shape, "shape mismatch for {}".format(self.image_path(image_index))
+        if self.mean_image is not None:
+            if img.shape != self.mean_image.shape:
+                self.mean_image,_ = resize_image(self.mean_image,img.shape[0], img.shape[1])
+                #print(f'image shape: {img.shape}',flush=True)
+                #print(f'mean image shape: {self.mean_image.shape}',flush=True)
+        #assert img.shape == self.mean_image.shape, "shape mismatch for {}".format(self.image_path(image_index))
         return img
 
     def load_annotations(self, image_index):

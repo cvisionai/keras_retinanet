@@ -102,7 +102,7 @@ def create_callbacks(
     checkpoint = keras.callbacks.ModelCheckpoint(
         os.path.join(
             snapshot_path,
-            'resnet152_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
+            'resnet50_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
         ),
         verbose=1
     )
@@ -248,7 +248,7 @@ def parse_args():
     csv_parser = subparsers.add_parser('csv')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
     csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
-    csv_parser.add_argument('mean_image',help='Path to mean image of data set to subtract (optional).')
+    csv_parser.add_argument('--mean_image', default=None, help='Path to mean image of data set to subtract (optional).')
     csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
     csv_parser.add_argument('--image_min_side', default=1080, help='Length of minimum image side. Image will be scaled to this')
     csv_parser.add_argument('--image_max_side', default=1920, help='Length of maximum image side. Image will be scaled to this')

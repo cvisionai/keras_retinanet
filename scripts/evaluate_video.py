@@ -36,10 +36,11 @@ import multiprocessing as mp
 def format_img(img,mean_image):
     img = img[:, :, (2, 1, 0)]
     img = img.astype(np.float32)
+    img, scale = resize_image(img, args.min_side, args.max_side)
+    mean_image,_ = resize_image(mean_image,args.min_side,args.max_side)
     img[:, :, 0] -= mean_image[:,:,0]
     img[:, :, 1] -= mean_image[:,:,1]
     img[:, :, 2] -= mean_image[:,:,2]
-    img, scale = resize_image(img, args.min_side, args.max_side)
     return img
 
 def read_frames(img_path, raw_frame_queue, stop_event):

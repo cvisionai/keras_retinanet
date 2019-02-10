@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument('model', help='Path to RetinaNet model.')
     parser.add_argument('test_path', help='Path to test images directory (ie. /tmp/COCO).')
     parser.add_argument('class_file', help='Name of the class file to evaluate')
-    parser.add_argument('mean_image', help='Mean image file to subtract')
+    parser.add_argument('--mean_image', default=None, help='Mean image file to subtract')
     parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
     parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.05).', default=0.05, type=float)
     parser.add_argument('--image_min_side', help='Minimum image side to rescale input to', default=1100, type=int)

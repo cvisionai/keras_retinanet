@@ -39,9 +39,9 @@ def preprocess_image(x, mean_image=None):
                 x[1, :, :] -= mean_image[1, :, :]
                 x[2, :, :] -= mean_image[2, :, :]
             else:
-                x[0, :, :] -= 0 #103.939
-                x[1, :, :] -= 0 #116.779
-                x[2, :, :] -= 0 #123.68
+                x[0, :, :] -= 103.939
+                x[1, :, :] -= 116.779
+                x[2, :, :] -= 123.68
         else:
             if mean_image is not None:
                 mean_image = mean_image[::-1]
@@ -49,18 +49,18 @@ def preprocess_image(x, mean_image=None):
                 x[:, 1, :, :] -= mean_image[1, :, :]
                 x[:, 2, :, :] -= mean_image[2, :, :]
             else:
-                x[:, 0, :, :] -= 0 #103.939
-                x[:, 1, :, :] -= 0 #116.779
-                x[:, 2, :, :] -= 0 #123.68
+                x[:, 0, :, :] -= 103.939
+                x[:, 1, :, :] -= 116.779
+                x[:, 2, :, :] -= 123.68
     else:
         if mean_image is not None:
             x[..., 0] -= mean_image[:, :, 0]
             x[..., 1] -= mean_image[:, :, 1]
             x[..., 2] -= mean_image[:, :, 2]
         else:
-            x[..., 0] -= 0 #103.939
-            x[..., 1] -= 0 #116.779
-            x[..., 2] -= 0 #123.68
+            x[..., 0] -= 103.939
+            x[..., 1] -= 116.779
+            x[..., 2] -= 123.68
 
     return x
 
@@ -106,8 +106,8 @@ def random_transform(
         boxes[index, 3] = float(max(i)) + 1  # set box to an open interval [min, max)
 
     invalid_boxes = sorted(invalid_boxes,reverse=True)
-    if len(invalid_boxes) == len(boxes):
-        print("Deleted all boxes")
+#    if len(invalid_boxes) == len(boxes):
+#        print("Deleted all boxes")
     boxes = np.delete(boxes,invalid_boxes,axis=0)
     #for box_elem in invalid_boxes:
     #    del boxes[box_elem]
@@ -133,7 +133,7 @@ def resize_image(img, min_side=600, max_side=1024):
         scale = max_side / largest_side
     # resize the image with the computed scale
     img = cv2.resize(img, None, fx=scale, fy=scale)
-
+    #img = cv2.resize(img, (max_side,min_side))
     return img, scale
 
 def bb_intersection_over_union(boxA, boxB):
