@@ -32,6 +32,7 @@ from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet.preprocessing.image_preprocessor import ImagePreProcessor
 from keras_retinanet.models.resnet import ResNet152RetinaNet
+from keras_retinanet.models.resnet import custom_objects
 from keras_retinanet.utils.keras_version import check_keras_version
 
 def generator(batch_queue):
@@ -55,7 +56,7 @@ def get_session():
     return tf.Session(config=config)
 
 
-def create_models(num_classes, weights='imagenet', multi_gpu=0):
+def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False):
     # create "base" model (no NMS)
     image = keras.layers.Input((None, None, 3))
 
@@ -77,12 +78,17 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0):
     prediction_model = keras.models.Model(inputs=model.inputs, outputs=model.outputs[:2] + [detections])
 
     # compile model
+    if checkpoint:
+        learning_rate = 1e-7
+    else:
+        learning_rate = 1e-5
+
     training_model.compile(
         loss={
             'regression'    : keras_retinanet.losses.smooth_l1(),
             'classification': keras_retinanet.losses.focal()
         },
-        optimizer=keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
+        optimizer=keras.optimizers.adam(lr=learning_rate, clipnorm=0.001)
     )
 
     return model, training_model, prediction_model
@@ -207,7 +213,9 @@ def create_generators(args,group_queue):
                 args.classes,
                 args.mean_image,
                 val_image_data_generator,
-                batch_size=args.batch_size
+                batch_size=args.batch_size,
+                image_min_side=int(args.image_min_side),
+                image_max_side=int(args.image_max_side),
             )
         else:
             validation_generator = None
@@ -260,6 +268,7 @@ def parse_args():
     parser.add_argument('--snapshot-path', help='Path to store snapshots of models during training (defaults to \'./snapshots\')', default='./snapshots')
     parser.add_argument('--log-dir', default=None, help='path to store tensorboard logs')
     parser.add_argument('--num_processors', type=int, default=8, help='Number of image preprocessing objects')
+    parser.add_argument('--resume', action='store_true', help='Adjust learning parameters for resume or transfer learning')
 
     return check_args(parser.parse_args())
 
@@ -311,7 +320,11 @@ if __name__ == '__main__':
 
     # create the model
     print('Creating model, this may take a second...')
-    model, training_model, prediction_model = create_models(num_classes=train_generator.num_classes(), weights=args.weights, multi_gpu=args.multi_gpu)
+    model, training_model, prediction_model = create_models(
+            num_classes=train_generator.num_classes(), 
+            weights=args.weights, 
+            multi_gpu=args.multi_gpu, 
+            checkpoint=args.resume)
 
     # print model summary
     #print(model.summary())
@@ -327,6 +340,7 @@ if __name__ == '__main__':
         epochs=500,
         verbose=1,
         callbacks=callbacks,
+        use_multiprocessing=True
     )
 
     for proc in img_processes:
