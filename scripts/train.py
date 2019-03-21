@@ -16,12 +16,9 @@ limitations under the License.
 from PIL import Image
 import argparse
 import os
-from multiprocessing import Queue
-from multiprocessing import Process
-
-import keras
-import keras.preprocessing.image
-from keras.utils import multi_gpu_model
+import tensorflow.keras as keras
+import tensorflow.keras.preprocessing.image as keras_image
+from tensorflow.keras.utils import multi_gpu_model
 
 import tensorflow as tf
 
@@ -30,25 +27,9 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.preprocessing.image_preprocessor import ImagePreProcessor
 from keras_retinanet.models.resnet import ResNet152RetinaNet
-from keras_retinanet.models.resnet import custom_objects
 from keras_retinanet.utils.keras_version import check_keras_version
-
-def generator(batch_queue):
-    """ Yields data batches from a queue.
-        Inputs:
-        batch_queue - Queue containing tuples of images pairs and labels.
-    """
-    while True:
-        yield batch_queue.get(True, None)
-
-def provider(data_provider):
-    """ Pushes data onto the queue.
-        Inputs:
-        data_provider - A CSVGenerator object.
-    """
-    data_provider.start()
+from keras_retinanet.utils.transform import random_transform_generator
 
 def get_session():
     config = tf.ConfigProto()
@@ -151,18 +132,20 @@ def create_callbacks(
     return callbacks
 
 
-def create_generators(args,group_queue):
+def create_generators(args):
     # create image data generator objects
-    train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
+    train_image_data_generator = keras_image.ImageDataGenerator(
         horizontal_flip=True,
         vertical_flip=True,
         zoom_range=0.15,
         rotation_range=25
     )
-#    train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
-#        horizontal_flip=True
-#    )
-    val_image_data_generator = keras.preprocessing.image.ImageDataGenerator()
+    val_image_data_generator = keras_image.ImageDataGenerator(
+        horizontal_flip=True,
+        vertical_flip=True,
+        zoom_range=0.15,
+        rotation_range=25
+    )
 
     if args.dataset_type == 'coco':
         # import here to prevent unnecessary dependency on cocoapi
@@ -203,8 +186,7 @@ def create_generators(args,group_queue):
             train_image_data_generator,
             batch_size=args.batch_size,
             image_min_side=int(args.image_min_side),
-            image_max_side=int(args.image_max_side),
-            group_queue=group_queue
+            image_max_side=int(args.image_max_side)
         )
 
         if args.val_annotations:
@@ -215,7 +197,7 @@ def create_generators(args,group_queue):
                 val_image_data_generator,
                 batch_size=args.batch_size,
                 image_min_side=int(args.image_min_side),
-                image_max_side=int(args.image_max_side),
+                image_max_side=int(args.image_max_side)
             )
         else:
             validation_generator = None
@@ -282,41 +264,10 @@ if __name__ == '__main__':
     # optionally choose specific GPU
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    keras.backend.tensorflow_backend.set_session(get_session())
+    keras.backend.set_session(get_session())
 
-    group_queue = Queue(20)
-    image_queue = Queue(20)
     # create the generators
-    train_generator, validation_generator = create_generators(args,group_queue)
-
-    train_process = Process(target=provider, args=(train_generator,))
-    train_process.daemon = True
-    train_process.start()
-    train_data_generator = generator(image_queue)
-    img_processes = []
-    for num in range(args.num_processors):
-        image_data_generator = keras.preprocessing.image.ImageDataGenerator(
-            horizontal_flip=True,
-            vertical_flip=True,
-            zoom_range=0.15,
-            rotation_range=25
-            )
-
-        data_generator = ImagePreProcessor(
-            args.annotations,
-            args.classes,
-            args.mean_image,
-            image_data_generator,
-            group_queue,
-            image_queue,
-            batch_size=args.batch_size,
-            image_min_side=int(args.image_min_side),
-            image_max_side=int(args.image_max_side),
-        )
-        image_process = Process(target=provider, args=(data_generator,))
-        image_process.daemon = True
-        image_process.start()
-        img_processes.append(image_process)
+    train_generator, validation_generator = create_generators(args)
 
     # create the model
     print('Creating model, this may take a second...')
@@ -332,19 +283,16 @@ if __name__ == '__main__':
     # create the callbacks
     callbacks = create_callbacks(model, training_model, prediction_model, validation_generator, args.dataset_type, args.snapshot_path, args)
 
-
     # start training
     training_model.fit_generator(
-        generator=train_data_generator,
+        generator=train_generator,
         steps_per_epoch=500,
         epochs=500,
         verbose=1,
         callbacks=callbacks,
-        use_multiprocessing=True
+        use_multiprocessing=True,
+        workers=args.num_processors,
+        max_queue_size = 20,
+        validation_data=validation_generator
     )
 
-    for proc in img_processes:
-        proc.terminate()
-        proc.join()
-    train_process.terminate()
-    train_process.join()

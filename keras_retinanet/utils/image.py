@@ -17,7 +17,7 @@ limitations under the License.
 from __future__ import division
 from PIL import Image
 import time
-import keras
+import tensorflow.keras as keras
 import numpy as np
 import cv2
 
@@ -31,9 +31,12 @@ def preprocess_image(x, mean_image=None):
     # mostly identical to "https://github.com/fchollet/keras/blob/master/keras/applications/imagenet_utils.py"
     # except for converting RGB -> BGR since we assume BGR already
     x = x.astype(keras.backend.floatx())
+    # image size check
     if keras.backend.image_data_format() == 'channels_first':
         if x.ndim == 3:
             if mean_image is not None:
+                if not mean_image.shape == x.shape:
+                    mean_image = resize_image(mean_image, x.shape[1], x.shape[2])
                 mean_image = mean_image[::-1]
                 x[0, :, :] -= mean_image[0, :, :]
                 x[1, :, :] -= mean_image[1, :, :]
@@ -44,6 +47,8 @@ def preprocess_image(x, mean_image=None):
                 x[2, :, :] -= 123.68
         else:
             if mean_image is not None:
+                if not mean_image.shape == x.shape:
+                    mean_image = resize_image(mean_image, x.shape[1], x.shape[2])
                 mean_image = mean_image[::-1]
                 x[:, 0, :, :] -= mean_image[0, :, :]
                 x[:, 1, :, :] -= mean_image[1, :, :]
@@ -54,6 +59,8 @@ def preprocess_image(x, mean_image=None):
                 x[:, 2, :, :] -= 123.68
     else:
         if mean_image is not None:
+            if not mean_image.shape == x.shape:
+                mean_image = resize_image(mean_image, x.shape[0], x.shape[1])
             x[..., 0] -= mean_image[:, :, 0]
             x[..., 1] -= mean_image[:, :, 1]
             x[..., 2] -= mean_image[:, :, 2]
@@ -106,11 +113,7 @@ def random_transform(
         boxes[index, 3] = float(max(i)) + 1  # set box to an open interval [min, max)
 
     invalid_boxes = sorted(invalid_boxes,reverse=True)
-#    if len(invalid_boxes) == len(boxes):
-#        print("Deleted all boxes")
     boxes = np.delete(boxes,invalid_boxes,axis=0)
-    #for box_elem in invalid_boxes:
-    #    del boxes[box_elem]
 
     # restore fill_mode
     image_data_generator.fill_mode = fill_mode

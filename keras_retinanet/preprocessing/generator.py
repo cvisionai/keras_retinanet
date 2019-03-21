@@ -20,7 +20,7 @@ import threading
 import time
 import warnings
 
-import keras
+import tensorflow.keras as keras
 
 from ..utils.image import preprocess_image, resize_image, random_transform
 from ..utils.anchors import anchor_targets_bbox
@@ -35,12 +35,10 @@ class Generator(object):
         shuffle_groups=True,
         image_min_side=1080,
         image_max_side=1920,
-        group_queue=None,
         seed=None
     ):
         self.image_data_generator = image_data_generator
         self.batch_size           = int(batch_size)
-        self.group_queue          = group_queue
         self.group_method         = group_method
         self.shuffle_groups       = shuffle_groups
         self.image_min_side       = image_min_side
@@ -116,23 +114,35 @@ class Generator(object):
     def preprocess_image(self, image):
         return preprocess_image(image, mean_image=self.mean_image)
 
+    def preprocess_group_entry(self, image, annotations):
+        """ Preprocess image and its annotations.
+        """
+
+        # randomly transform the image and annotations
+        image, annotations = random_transform(image, annotations, self.image_data_generator)
+        
+        # preprocess the image
+        image = self.preprocess_image(image)
+
+        # resize image
+        image, image_scale = self.resize_image(image)
+
+        # apply resizing to annotations too
+        annotations['bboxes'] *= image_scale
+
+        # convert to the wanted keras floatx
+        image = keras.backend.cast_to_floatx(image)
+
+        return image, annotations
+
     def preprocess_group(self, image_group, annotations_group):
-        for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
+        """ Preprocess each image and its annotations in its group.
+        """
+        assert(len(image_group) == len(annotations_group))
 
-            # randomly transform both image and annotations
-            image, annotations = random_transform(image, annotations, self.image_data_generator)
-
-            # resize image
-            image, image_scale = self.resize_image(image)
-
-            # preprocess the image (subtract imagenet mean)
-            image = self.preprocess_image(image)
-            # apply resizing to annotations too
-            annotations[:, :4] *= image_scale
-
-            # copy processed data back to group
-            image_group[index]       = image
-            annotations_group[index] = annotations
+        for index in range(len(image_group)):
+            # preprocess a single group entry
+            image_group[index], annotations_group[index] = self.preprocess_group_entry(image_group[index], annotations_group[index])
 
         return image_group, annotations_group
 
@@ -214,22 +224,19 @@ class Generator(object):
         targets = self.compute_targets(image_group, annotations_group)
 
         return inputs, targets
-
-    def __next__(self):
-        return self.next()
-
-    def next(self):
-        # advance the group index
-        # with self.lock:
-        if self.group_index == 0 and self.shuffle_groups:
-            # shuffle groups at start of epoch
-            random.shuffle(self.groups)
-        group = self.groups[self.group_index]
-        self.group_queue.put(group)
-        self.group_index = (self.group_index + 1) % len(self.groups)
-
-    def start(self):
-        """ Starts pushing data onto queue.
+    def __len__(self):
         """
-        while True:
-            self.__next__()
+        Number of batches for generator.
+        """
+
+        return len(self.groups)
+
+    def __getitem__(self, index):
+        """
+        Keras sequence method for generating batches.
+        """
+        group = self.groups[index]
+        inputs, targets = self.compute_input_output(group)
+
+        return inputs, targets
+

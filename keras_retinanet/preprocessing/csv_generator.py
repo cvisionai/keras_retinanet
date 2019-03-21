@@ -119,7 +119,6 @@ class CSVGenerator(Generator):
         self.base_dir    = base_dir
         if mean_image_file is not None:
             self.mean_image = np.load(mean_image_file)
-            self.mean_image,_ = resize_image(self.mean_image, min_side=kwargs.get('image_min_side'),max_side=kwargs.get('image_max_side')) 
         else:
             self.mean_image = None
         # Take base_dir from annotations file if not explicitly specified.
@@ -169,12 +168,6 @@ class CSVGenerator(Generator):
 
     def load_image(self, image_index):
         img = read_image_bgr(self.image_path(image_index))
-        if self.mean_image is not None:
-            if img.shape != self.mean_image.shape:
-                self.mean_image,_ = resize_image(self.mean_image,img.shape[0], img.shape[1])
-                #print(f'image shape: {img.shape}',flush=True)
-                #print(f'mean image shape: {self.mean_image.shape}',flush=True)
-        #assert img.shape == self.mean_image.shape, "shape mismatch for {}".format(self.image_path(image_index))
         return img
 
     def load_annotations(self, image_index):
