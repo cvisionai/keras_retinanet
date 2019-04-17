@@ -16,9 +16,9 @@ limitations under the License.
 from PIL import Image
 import argparse
 import os
-import tensorflow.keras as keras
-import tensorflow.keras.preprocessing.image as keras_image
-from tensorflow.keras.utils import multi_gpu_model
+import keras
+import keras.preprocessing.image
+from keras.utils import multi_gpu_model
 
 import tensorflow as tf
 
@@ -27,7 +27,7 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.models.resnet import ResNet152RetinaNet
+from keras_retinanet.models.resnet import ResNet101RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 from keras_retinanet.utils.transform import random_transform_generator
 
@@ -45,10 +45,10 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+            model = ResNet101RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model = ResNet152RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+        model = ResNet101RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = model
 
     # append NMS for prediction only
@@ -121,7 +121,7 @@ def create_callbacks(
     lr_scheduler = keras.callbacks.ReduceLROnPlateau(
         monitor='loss',
         factor=0.1,
-        patience=2,
+        patience=10,
         verbose=1,
         mode='auto',
         epsilon=0.0001,
@@ -134,13 +134,13 @@ def create_callbacks(
 
 def create_generators(args):
     # create image data generator objects
-    train_image_data_generator = keras_image.ImageDataGenerator(
+    train_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
         horizontal_flip=True,
         vertical_flip=True,
         zoom_range=0.15,
         rotation_range=25
     )
-    val_image_data_generator = keras_image.ImageDataGenerator(
+    val_image_data_generator = keras.preprocessing.image.ImageDataGenerator(
         horizontal_flip=True,
         vertical_flip=True,
         zoom_range=0.15,
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     # optionally choose specific GPU
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    keras.backend.set_session(get_session())
+    keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the generators
     train_generator, validation_generator = create_generators(args)
@@ -286,13 +286,13 @@ if __name__ == '__main__':
     # start training
     training_model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=500,
+        steps_per_epoch=350,
         epochs=500,
         verbose=1,
         callbacks=callbacks,
-        use_multiprocessing=True,
+        use_multiprocessing=False,
         workers=args.num_processors,
-        max_queue_size = 20,
+        max_queue_size = 30,
         validation_data=validation_generator
     )
 

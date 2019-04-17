@@ -20,13 +20,13 @@ import threading
 import time
 import warnings
 
-import tensorflow.keras as keras
+import keras
 
 from ..utils.image import preprocess_image, resize_image, random_transform
 from ..utils.anchors import anchor_targets_bbox
 
 
-class Generator(object):
+class Generator(keras.utils.Sequence):
     def __init__(
         self,
         image_data_generator,
@@ -118,9 +118,6 @@ class Generator(object):
         """ Preprocess image and its annotations.
         """
 
-        # randomly transform the image and annotations
-        image, annotations = random_transform(image, annotations, self.image_data_generator)
-        
         # preprocess the image
         image = self.preprocess_image(image)
 
@@ -128,7 +125,10 @@ class Generator(object):
         image, image_scale = self.resize_image(image)
 
         # apply resizing to annotations too
-        annotations['bboxes'] *= image_scale
+        annotations[:, :4] *= image_scale
+        
+        # randomly transform the image and annotations
+        image, annotations = random_transform(image, annotations, self.image_data_generator)
 
         # convert to the wanted keras floatx
         image = keras.backend.cast_to_floatx(image)
@@ -224,6 +224,7 @@ class Generator(object):
         targets = self.compute_targets(image_group, annotations_group)
 
         return inputs, targets
+
     def __len__(self):
         """
         Number of batches for generator.

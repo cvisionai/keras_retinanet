@@ -32,7 +32,7 @@ def ResNet50RetinaNet(inputs, num_classes, weights='imagenet', *args, **kwargs):
 
     # load pretrained imagenet weights?
     if weights == 'imagenet':
-        weights_path = keras.applications.imagenet_utils.get_file(
+        weights_path = keras.utils.get_file(
             'ResNet-50-model.keras.h5',
             WEIGHTS_PATH_NO_TOP_50, cache_subdir='models', md5_hash='3e9f4e4f77bbe2c9bec13b53ee1c2319'
         )
@@ -51,7 +51,7 @@ def ResNet101RetinaNet(inputs, num_classes, weights='imagenet', *args, **kwargs)
 
     # load pretrained imagenet weights?
     if weights == 'imagenet':
-        weights_path = keras.applications.imagenet_utils.get_file(
+        weights_path = keras.utils.get_file(
             'ResNet-101-model.keras.h5',
             WEIGHTS_PATH_NO_TOP_101, cache_subdir='models', md5_hash='05dc86924389e5b401a9ea0348a3213c'
         )
@@ -70,7 +70,7 @@ def ResNet152RetinaNet(inputs, num_classes, weights='imagenet', *args, **kwargs)
 
     # load pretrained imagenet weights?
     if weights == 'imagenet':
-        weights_path = keras.applications.imagenet_utils.get_file(
+        weights_path = keras.utils.get_file(
             'ResNet-152-model.keras.h5',
             WEIGHTS_PATH_NO_TOP_152, cache_subdir='models', md5_hash='6ee11ef2b135592f8031058820bb9e71'
         )
