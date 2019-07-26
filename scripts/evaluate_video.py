@@ -34,7 +34,7 @@ import pickle
 import multiprocessing as mp
 
 def format_img(img,mean_image=None):
-    img = img[:, :, (2, 1, 0)]
+    #img = img[:, :, (2, 1, 0)]
     img = img.astype(np.float32)
     img, scale = resize_image(img, args.min_side, args.max_side)
     if mean_image is not None:
