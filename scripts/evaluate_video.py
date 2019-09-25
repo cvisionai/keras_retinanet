@@ -21,6 +21,7 @@ import keras.preprocessing.image
 from keras_retinanet.models.resnet import custom_objects
 from keras_retinanet.utils.keras_version import check_keras_version
 from keras_retinanet.utils.image import resize_image
+from functools import partial
 import tensorflow as tf
 import numpy as np
 import argparse
@@ -32,6 +33,18 @@ import cv2
 import json
 import pickle
 import multiprocessing as mp
+import signal
+import time
+
+def signal_handler(signal_received, frame, stop_event, frame_stop_event):
+    # Handle any cleanup here
+    stop_event.set()
+    frame_stop_event.set()
+    print('SIGINT or CTRL-C detected. Exiting gracefully')
+    for i in range(10):
+        print(f'Shutting down in {i}')
+        time.sleep(1)
+    exit(0)
 
 def format_img(img,mean_image=None):
     #img = img[:, :, (2, 1, 0)]
@@ -138,6 +151,9 @@ if __name__ == '__main__':
     frame_queue = mp.Queue(50)
     stop_event = mp.Event()
     frame_stop_event = mp.Event()
+    signal.signal(
+        signal.SIGINT, 
+        partial(signal_handler, stop_event, frame_stop_event))
     p = mp.Process(target=read_frames, args=(args.video_path,raw_queue,stop_event))
     p.daemon = True
     p.start()
