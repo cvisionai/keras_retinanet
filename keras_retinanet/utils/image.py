@@ -36,7 +36,7 @@ def preprocess_image(x, mean_image=None):
         if x.ndim == 3:
             if mean_image is not None:
                 if not mean_image.shape == x.shape:
-                    mean_image = resize_image(mean_image, x.shape[1], x.shape[2])
+                    mean_image,_ = resize_image(mean_image, x.shape[1], x.shape[2])
                 mean_image = mean_image[::-1]
                 x[0, :, :] -= mean_image[0, :, :]
                 x[1, :, :] -= mean_image[1, :, :]
@@ -48,7 +48,7 @@ def preprocess_image(x, mean_image=None):
         else:
             if mean_image is not None:
                 if not mean_image.shape == x.shape:
-                    mean_image = resize_image(mean_image, x.shape[1], x.shape[2])
+                    mean_image,_ = resize_image(mean_image, x.shape[1], x.shape[2])
                 mean_image = mean_image[::-1]
                 x[:, 0, :, :] -= mean_image[0, :, :]
                 x[:, 1, :, :] -= mean_image[1, :, :]
@@ -60,7 +60,7 @@ def preprocess_image(x, mean_image=None):
     else:
         if mean_image is not None:
             if not mean_image.shape == x.shape:
-                mean_image = resize_image(mean_image, x.shape[0], x.shape[1])
+                mean_image,_ = resize_image(mean_image, x.shape[0], x.shape[1])
             x[..., 0] -= mean_image[:, :, 0]
             x[..., 1] -= mean_image[:, :, 1]
             x[..., 2] -= mean_image[:, :, 2]
