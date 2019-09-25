@@ -36,15 +36,14 @@ import multiprocessing as mp
 import signal
 import time
 
-def signal_handler(signal_received, frame, stop_event, frame_stop_event):
+def signal_handler(stop_event, frame_stop_event,signal_received, frame):
     # Handle any cleanup here
     stop_event.set()
     frame_stop_event.set()
     print('SIGINT or CTRL-C detected. Exiting gracefully')
     for i in range(10):
-        print(f'Shutting down in {i}')
+        print(f'Shutting down in {10-i}')
         time.sleep(1)
-    exit(0)
 
 def format_img(img,mean_image=None):
     #img = img[:, :, (2, 1, 0)]
