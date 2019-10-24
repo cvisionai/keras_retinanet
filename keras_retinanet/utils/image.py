@@ -28,7 +28,7 @@ def read_image_bgr(path):
 
 def read_image_as_mono(path,channel=0):
     image = np.asarray(Image.open(path)).convert('RGB')
-    return image[:,:,channel].copy()
+    return np.expand_dims(image[:,:,channel].copy(),axis=0)
 
 def preprocess_mono_image(x, mean_image=None)
     x = x.astype(keras.backend.floatx())
@@ -58,6 +58,7 @@ def preprocess_mono_image(x, mean_image=None)
             x[..., 0] -= 123.68 # Corresponds to red channel for ImageNet mean
 
     return x
+    
 def preprocess_image(x, mean_image=None):
     # mostly identical to "https://github.com/fchollet/keras/blob/master/keras/applications/imagenet_utils.py"
     # except for converting RGB -> BGR since we assume BGR already

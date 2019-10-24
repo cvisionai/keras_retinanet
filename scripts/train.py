@@ -204,7 +204,8 @@ def create_generators(args):
         else:
             validation_generator = None
     else:
-        raise ValueError('Invalid data type received: {}'.format(dataset_type))
+        raise ValueError(
+            'Invalid data type received: {}'.format(args.dataset_type))
 
     return train_generator, validation_generator
 
