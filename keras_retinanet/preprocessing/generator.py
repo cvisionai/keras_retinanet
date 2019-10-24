@@ -22,7 +22,7 @@ import warnings
 
 import keras
 
-from ..utils.image import preprocess_image, resize_image, random_transform
+from ..utils.image import preprocess_image, preprocess_mono_image, resize_image, random_transform
 from ..utils.anchors import anchor_targets_bbox
 
 
@@ -112,7 +112,17 @@ class Generator(keras.utils.Sequence):
         return resize_image(image, min_side=self.image_min_side, max_side=self.image_max_side)
 
     def preprocess_image(self, image):
-        return preprocess_image(image, mean_image=self.mean_image)
+        image_preprocessors = {
+            'rgb' : preprocess_image,
+            'mono': preprocess_mono_image
+        }
+        
+        try:
+            _ = self.image_type
+        except AttributeError:
+            self.image_type = 'rgb'
+
+        return image_preprocessors[self.image_type](image, mean_image=self.mean_image)
 
     def preprocess_group_entry(self, image, annotations):
         """ Preprocess image and its annotations.

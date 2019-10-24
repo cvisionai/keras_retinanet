@@ -37,9 +37,9 @@ def get_session():
     return tf.Session(config=config)
 
 
-def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False):
+def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False, num_channels=3):
     # create "base" model (no NMS)
-    image = keras.layers.Input((None, None, 3))
+    image = keras.layers.Input((None, None, num_channels))
 
     # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
     # optionally wrap in a parallel model
@@ -186,7 +186,8 @@ def create_generators(args):
             train_image_data_generator,
             batch_size=args.batch_size,
             image_min_side=int(args.image_min_side),
-            image_max_side=int(args.image_max_side)
+            image_max_side=int(args.image_max_side),
+            image_type=args.num_channels
         )
 
         if args.val_annotations:
@@ -197,7 +198,8 @@ def create_generators(args):
                 val_image_data_generator,
                 batch_size=args.batch_size,
                 image_min_side=int(args.image_min_side),
-                image_max_side=int(args.image_max_side)
+                image_max_side=int(args.image_max_side),
+                image_type=args.num_channels
             )
         else:
             validation_generator = None
@@ -251,6 +253,7 @@ def parse_args():
     parser.add_argument('--log-dir', default=None, help='path to store tensorboard logs')
     parser.add_argument('--num_processors', type=int, default=8, help='Number of image preprocessing objects')
     parser.add_argument('--resume', action='store_true', help='Adjust learning parameters for resume or transfer learning')
+    parser.add_argument('--num_channels', default=3, help='Number of channels in input images')
 
     return check_args(parser.parse_args())
 
@@ -275,7 +278,8 @@ if __name__ == '__main__':
             num_classes=train_generator.num_classes(), 
             weights=args.weights, 
             multi_gpu=args.multi_gpu, 
-            checkpoint=args.resume)
+            checkpoint=args.resume,
+            num_channels=args.num_channels)
 
     # print model summary
     #print(model.summary())

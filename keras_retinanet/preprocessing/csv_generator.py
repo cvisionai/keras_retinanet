@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 from .generator import Generator
-from ..utils.image import read_image_bgr
+from ..utils.image import read_image_bgr, read_image_as_mono
 from ..utils.image import resize_image
 
 import numpy as np
@@ -112,11 +112,17 @@ class CSVGenerator(Generator):
         mean_image_file,
         image_data_generator,
         base_dir=None,
+        num_channels=3,
         **kwargs
     ):
         self.image_names = []
         self.image_data  = {}
         self.base_dir    = base_dir
+        if num_channels == 3: 
+            self.image_type = 'rgb'
+        else:
+            self.image_type = 'mono'
+            
         if mean_image_file is not None:
             self.mean_image = np.load(mean_image_file)
         else:
@@ -167,7 +173,12 @@ class CSVGenerator(Generator):
         return float(image.width) / float(image.height)
 
     def load_image(self, image_index):
-        img = read_image_bgr(self.image_path(image_index))
+        image_loaders = {
+            'rgb' : read_image_bgr,
+            'mono': read_image_as_mono
+        }
+
+        img = image_loaders[self.image_type](self.image_path(image_index))
         return img
 
     def load_annotations(self, image_index):
