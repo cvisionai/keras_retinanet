@@ -27,7 +27,7 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.models.resnet import ResNet101RetinaNet
+from keras_retinanet.models.resnet import ResNet18RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 from keras_retinanet.utils.transform import random_transform_generator
 
@@ -40,15 +40,16 @@ def get_session():
 def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False, num_channels=3):
     # create "base" model (no NMS)
     image = keras.layers.Input((None, None, num_channels))
-
+    if (weights == 'None') or (weights == None):
+        weights = None
     # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = ResNet101RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+            model = ResNet18RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model = ResNet101RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+        model = ResNet18RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = model
 
     # append NMS for prediction only
@@ -63,13 +64,15 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False
         learning_rate = 1e-7
     else:
         learning_rate = 1e-5
+    if weights == None:
+        learning_rate = 1e-3
 
     training_model.compile(
         loss={
             'regression'    : keras_retinanet.losses.smooth_l1(),
             'classification': keras_retinanet.losses.focal()
         },
-        optimizer=keras.optimizers.adam(lr=learning_rate, clipnorm=0.001)
+        optimizer=keras.optimizers.adam(lr=learning_rate, clipnorm=0.001, decay=1e-3/25)
     )
 
     return model, training_model, prediction_model
@@ -187,7 +190,7 @@ def create_generators(args):
             batch_size=args.batch_size,
             image_min_side=int(args.image_min_side),
             image_max_side=int(args.image_max_side),
-            image_type=args.num_channels
+            num_channels=args.num_channels
         )
 
         if args.val_annotations:
@@ -199,7 +202,7 @@ def create_generators(args):
                 batch_size=args.batch_size,
                 image_min_side=int(args.image_min_side),
                 image_max_side=int(args.image_max_side),
-                image_type=args.num_channels
+                num_channels=args.num_channels
             )
         else:
             validation_generator = None
@@ -254,7 +257,7 @@ def parse_args():
     parser.add_argument('--log-dir', default=None, help='path to store tensorboard logs')
     parser.add_argument('--num_processors', type=int, default=8, help='Number of image preprocessing objects')
     parser.add_argument('--resume', action='store_true', help='Adjust learning parameters for resume or transfer learning')
-    parser.add_argument('--num_channels', default=3, help='Number of channels in input images')
+    parser.add_argument('--num_channels', type=int, default=3, help='Number of channels in input images')
 
     return check_args(parser.parse_args())
 
@@ -291,13 +294,13 @@ if __name__ == '__main__':
     # start training
     training_model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=350,
-        epochs=500,
+        steps_per_epoch=1000,
+        epochs=100,
         verbose=1,
         callbacks=callbacks,
         use_multiprocessing=False,
         workers=args.num_processors,
-        max_queue_size = 30,
+        max_queue_size = 20,
         validation_data=validation_generator
     )
 

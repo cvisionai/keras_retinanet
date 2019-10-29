@@ -27,10 +27,10 @@ def read_image_bgr(path):
     return image[:, :, ::-1].copy()
 
 def read_image_as_mono(path,channel=0):
-    image = np.asarray(Image.open(path)).convert('RGB')
-    return np.expand_dims(image[:,:,channel].copy(),axis=0)
+    image = np.asarray(Image.open(path).convert('RGB'))
+    return np.expand_dims(image[:,:,channel].copy(),axis=-1)
 
-def preprocess_mono_image(x, mean_image=None)
+def preprocess_mono_image(x, mean_image=None):
     x = x.astype(keras.backend.floatx())
     # image size check
     if keras.backend.image_data_format() == 'channels_first':
@@ -155,7 +155,6 @@ def random_transform(
 
 def resize_image(img, min_side=600, max_side=1024):
     (rows, cols, _) = img.shape
-
     smallest_side = min(rows, cols)
 
     # rescale the image so the smallest side is min_side
@@ -168,6 +167,8 @@ def resize_image(img, min_side=600, max_side=1024):
         scale = max_side / largest_side
     # resize the image with the computed scale
     img = cv2.resize(img, None, fx=scale, fy=scale)
+    if len(img.shape) < 3:
+        img = np.expand_dims(img,axis=-1)
     #img = cv2.resize(img, (max_side,min_side))
     return img, scale
 
