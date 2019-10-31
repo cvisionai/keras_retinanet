@@ -22,7 +22,7 @@ import warnings
 
 import keras
 
-from ..utils.image import preprocess_image, preprocess_mono_image, resize_image, random_transform
+from ..utils.image import preprocess_image, preprocess_mono_image, preprocess_gray_image, resize_image, random_transform
 from ..utils.anchors import anchor_targets_bbox
 
 
@@ -31,7 +31,7 @@ class Generator(keras.utils.Sequence):
         self,
         image_data_generator,
         batch_size=1,
-        group_method='ratio',  # one of 'none', 'random', 'ratio'
+        group_method='random',  # one of 'none', 'random', 'ratio'
         shuffle_groups=True,
         image_min_side=1080,
         image_max_side=1920,
@@ -52,6 +52,10 @@ class Generator(keras.utils.Sequence):
         self.lock        = threading.Lock()
 
         self.group_images()
+
+    def on_epoch_end(self):
+        if self.shuffle_groups:
+            random.shuffle(self.groups)
 
     def size(self):
         raise NotImplementedError('size method not implemented')
@@ -114,7 +118,7 @@ class Generator(keras.utils.Sequence):
     def preprocess_image(self, image):
         image_preprocessors = {
             'rgb' : preprocess_image,
-            'mono': preprocess_mono_image
+            'mono': preprocess_gray_image
         }
         
         try:
