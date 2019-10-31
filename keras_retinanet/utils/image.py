@@ -30,6 +30,40 @@ def read_image_as_mono(path,channel=0):
     image = np.asarray(Image.open(path).convert('RGB'))
     return np.expand_dims(image[:,:,channel].copy(),axis=-1)
 
+def read_image_as_grayscale(path):
+    image = np.asarray(Image.open(path).convert('L'))
+    return np.expand_dims(image.copy(), axis=-1)
+
+def preprocess_gray_image(x, mean_image=None):
+    x = x.astype(keras.backend.floatx())
+    # image size check
+    if keras.backend.image_data_format() == 'channels_first':
+        if x.ndim == 3:
+            if mean_image is not None:
+                if not mean_image.shape == x.shape:
+                    mean_image,_ = resize_image(mean_image, x.shape[1], x.shape[2])
+                mean_image = mean_image[::-1]
+                x[0, :, :] -= mean_image[0, :, :]
+            else:
+                x[0, :, :] -= 67.637 # MBARI specific number
+        else:
+            if mean_image is not None:
+                if not mean_image.shape == x.shape:
+                    mean_image,_ = resize_image(mean_image, x.shape[1], x.shape[2])
+                x[:, 0, :, :] -= mean_image[0, :, :]
+            else:
+                x[:, 0, :, :] -= 67.637 # MBARI specific number
+    else:
+        if mean_image is not None:
+            if not mean_image.shape == x.shape:
+                mean_image,_ = resize_image(mean_image, x.shape[0], x.shape[1])
+            x[..., 0] -= mean_image[:, :, 0]
+        else:
+            x[..., 0] -= 67.637 # MBARI specific number
+
+    return x
+    
+
 def preprocess_mono_image(x, mean_image=None):
     x = x.astype(keras.backend.floatx())
     # image size check
