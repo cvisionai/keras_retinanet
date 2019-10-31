@@ -31,10 +31,7 @@ def ResNet18RetinaNet(inputs, num_classes, weights=None, *args, **kwargs):
 
     # load pretrained imagenet weights?
     if weights == 'imagenet':
-        weights_path = keras.utils.get_file(
-            'ResNet-50-model.keras.h5',
-            WEIGHTS_PATH_NO_TOP_50, cache_subdir='models', md5_hash='3e9f4e4f77bbe2c9bec13b53ee1c2319'
-        )
+        raise NameError('No pre-trained model for ResNet18!')
     else:
         weights_path = weights
 
