@@ -27,7 +27,7 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.models.resnet import ResNet18RetinaNet
+from keras_retinanet.models.resnet import ResNet50RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 from keras_retinanet.utils.transform import random_transform_generator
 
@@ -46,10 +46,10 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = ResNet18RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+            model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model = ResNet18RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+        model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = model
 
     # append NMS for prediction only
@@ -72,7 +72,8 @@ def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False
             'regression'    : keras_retinanet.losses.smooth_l1(),
             'classification': keras_retinanet.losses.focal()
         },
-        optimizer=keras.optimizers.adam(lr=learning_rate, clipnorm=0.001, decay=1e-3/25)
+        #optimizer=keras.optimizers.SGD(lr=learning_rate, momentum=0.9, decay=0.0007092, clipnorm=0.001)
+        optimizer=keras.optimizers.Adam(lr=learning_rate, clipnorm=0.001)
     )
 
     return model, training_model, prediction_model
@@ -120,18 +121,18 @@ def create_callbacks(
         evaluation = keras_retinanet.callbacks.coco.CocoEval(validation_generator)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
-
+    
     lr_scheduler = keras.callbacks.ReduceLROnPlateau(
         monitor='loss',
         factor=0.1,
-        patience=10,
+        patience=3,
         verbose=1,
-        mode='auto',
-        epsilon=0.0001,
+        mode='min',
+        min_delta=0.01,
         cooldown=0,
-        min_lr=0)
+        min_lr=1e-8)
     callbacks.append(lr_scheduler)
-
+    
     return callbacks
 
 
@@ -294,13 +295,13 @@ if __name__ == '__main__':
     # start training
     training_model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=1000,
-        epochs=100,
+        steps_per_epoch=423,
+        epochs=200,
         verbose=1,
         callbacks=callbacks,
         use_multiprocessing=False,
         workers=args.num_processors,
-        max_queue_size = 20,
+        max_queue_size = 30,
         validation_data=validation_generator
     )
 
