@@ -6,6 +6,7 @@ vim build-essential cmake autoconf automake autopoint libglib2.0-dev libtool lib
 
 # Install keras
 RUN pip install --no-cache-dir keras==2.2.4
+RUN pip install --no-cache-dir opencv-python==4.1.1.26
 
 # Install keras_retinanet
 COPY . /keras_retinanet/.
