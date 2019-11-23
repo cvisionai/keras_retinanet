@@ -30,6 +30,7 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+from keras_retinanet.preprocessing.csv_generator import OpenEMGenerator
 from keras_retinanet.preprocessing.image_preprocessor import ImagePreProcessor
 from keras_retinanet.models.resnet import ResNet152RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
@@ -189,6 +190,20 @@ def create_generators(args,group_queue):
             val_image_data_generator,
             batch_size=args.batch_size
         )
+    elif args.dataset_type == 'openem':
+        if args.train_img_dir == None:
+            raise Exception('ERROR: must supply train_img_dir for openem mode')
+        train_generator = OpenEMGenerator(
+            args.annotations,
+            args.classes,
+            args.mean_image,
+            train_image_data_generator,
+            base_dir=args.train_img_dir,
+            batch_size=args.batch_size,
+            image_min_side=int(args.image_min_side),
+            image_max_side=int(args.image_max_side),
+            group_queue=group_queue
+        )
     elif args.dataset_type == 'csv':
         train_generator = CSVGenerator(
             args.annotations,
@@ -254,6 +269,7 @@ def parse_args():
     csv_parser.add_argument('--image_max_side', default=1920, help='Length of maximum image side. Image will be scaled to this')
 
     parser.add_argument('--weights', help='Weights to use for initialization (defaults to ImageNet).', default='imagenet')
+    parser.add_argument('--train_img_dir', help='Path to training images')
     parser.add_argument('--batch-size', help='Size of the batches.', default=1, type=int)
     parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
     parser.add_argument('--multi-gpu', help='Number of GPUs to use for parallel processing.', type=int, default=0)
