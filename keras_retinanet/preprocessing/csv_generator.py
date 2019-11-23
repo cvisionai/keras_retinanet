@@ -25,7 +25,7 @@ from six import raise_from
 import csv
 import sys
 import os.path
-
+import math
 
 def _parse(value, function, fmt):
     """
@@ -87,6 +87,49 @@ def _read_annotations(csv_reader, classes):
             raise ValueError('line {}: unknown class name: {}'.format(line, class_name))
 
         result[img_file].append({'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2, 'class': class_name})
+    return result
+
+def _read_openem_annotations(csv_reader, classes):
+    result = {}
+    for line, row in enumerate(csv_reader):
+        try:
+            img_file, x1, y1, w, h, theta, species_id_1 = row
+        except ValueError:
+            raise_from(ValueError('line {}: format should be \'img_file,x1,y1,w,h,theta,species_id\' or \'img_file,,,,,,\''.format(line)), None)
+
+        if img_file not in result:
+            result[img_file] = []
+
+        # If a row contains only an image path, it's an image without annotations.
+        if (x1, y1, w, h, theta, class_name) == ('', '', '', '', '', ''):
+            continue
+
+        x1 = _parse(x1, int, 'line {}: malformed x1: {{}}'.format(line))
+        y1 = _parse(y1, int, 'line {}: malformed y1: {{}}'.format(line))
+        w = _parse(w, int, 'line {}: malformed w: {{}}'.format(line))
+        h = _parse(h, int, 'line {}: malformed h: {{}}'.format(line))
+        theta = _parse(theta, int, 'line {}: malformed theta: {{}}'.format(line))
+
+        # Calculate x2,y2 based on theta
+        x2 = x1 + w
+        y2 = y1 + h
+
+        # Apply rotation matrix to x2,y2 based on theta
+        x2 = (x2 * math.cos(theta)) - (y * math.sin(theta))
+        y2 = (x2 * math.sin(theta)) + (y * math.cos(theta))
+
+        # Check that the bounding box is valid.
+        if x2 <= x1:
+            raise ValueError('line {}: x2 ({}) must be higher than x1 ({})'.format(line, x2, x1))
+        if y2 <= y1:
+            raise ValueError('line {}: y2 ({}) must be higher than y1 ({})'.format(line, y2, y1))
+
+        # check if the current class name is correctly present
+        species_id_0 = species_id_1 - 1
+        if species_id_0 not in classes:
+            raise ValueError('line {}: unknown class name: {}'.format(line, class_name))
+
+        result[img_file].append({'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2, 'class': classes[species_id_0]})
     return result
 
 
@@ -182,3 +225,45 @@ class CSVGenerator(Generator):
             boxes[idx, 4] = self.name_to_label(class_name)
 
         return boxes
+
+class OpenEMGenerator(CSVGenerator):
+
+    def __init__(
+        self,
+        csv_data_file,
+        csv_class_file,
+        mean_image_file,
+        image_data_generator,
+        base_dir=None,
+        **kwargs
+    ):
+        self.image_names = []
+        self.image_data  = {}
+        self.base_dir    = base_dir
+        self.mean_image = np.load(mean_image_file)
+
+        # Take base_dir from annotations file if not explicitly specified.
+        if self.base_dir is None:
+            self.base_dir = os.path.dirname(csv_data_file)
+
+        # parse the provided class file
+        try:
+            with _open_for_csv(csv_class_file) as file:
+                self.classes = _read_classes(csv.reader(file, delimiter=','))
+        except ValueError as e:
+            raise_from(ValueError('invalid CSV class file: {}: {}'.format(csv_class_file, e)), None)
+
+        self.labels = {}
+        for key, value in self.classes.items():
+            self.labels[value] = key
+
+        # csv with img_path, x1, y1, w, h, theta(radians), species_id(1-based index)
+        try:
+            with _open_for_csv(csv_data_file) as file:
+                self.image_data = _read_openem_annotations(csv.reader(file, delimiter=','), self.classes)
+        except ValueError as e:
+            raise_from(ValueError('invalid CSV annotations file: {}: {}'.format(csv_data_file, e)), None)
+        self.image_names = list(self.image_data.keys())
+
+        # Call grandparent's init routine
+        super(CSVGenerator, self).__init__(image_data_generator, **kwargs)
