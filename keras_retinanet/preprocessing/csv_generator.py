@@ -93,10 +93,16 @@ def _read_openem_annotations(csv_reader, classes):
     result = {}
     for line, row in enumerate(csv_reader):
         try:
-            img_file, x1, y1, w, h, theta, species_id_1 = row
+            img_id, frame, x1, y1, w, h, theta, species_id_1 = row
         except ValueError:
             raise_from(ValueError('line {}: format should be \'img_file,x1,y1,w,h,theta,species_id\' or \'img_file,,,,,,\''.format(line)), None)
 
+        # If frame isn't supplied we have an image as input
+        if frame = '':
+            img_file = img_id
+        else:
+            f_jpeg = "{:04}.jpg".format(frame)
+            img_file = os.path.join(img_id, f_jpeg)
         if img_file not in result:
             result[img_file] = []
 
@@ -257,7 +263,7 @@ class OpenEMGenerator(CSVGenerator):
         for key, value in self.classes.items():
             self.labels[value] = key
 
-        # csv with img_path, x1, y1, w, h, theta(radians), species_id(1-based index)
+        # csv with img_id, frame, x1, y1, w, h, theta(radians), species_id(1-based index)
         try:
             with _open_for_csv(csv_data_file) as file:
                 self.image_data = _read_openem_annotations(csv.reader(file, delimiter=','), self.classes)
