@@ -83,12 +83,17 @@ class NonMaximumSuppression(keras.layers.Layer):
         super(NonMaximumSuppression, self).__init__(*args, **kwargs)
 
     def call(self, inputs, **kwargs):
-        boxes, classification, detections = inputs
+        # unlist and use map_fn to run once on each element of a batch
+        _, __, detections = inputs
+        return keras.backend.map_fn(self.loopBody, detections)
+    def loopBody(self, detections):
+        boxes = detections[:,:4]
+        classification = detections[:,4:]
 
         # TODO: support batch size > 1.
-        boxes          = boxes[0]
-        classification = classification[0]
-        detections     = detections[0]
+        #boxes          = boxes[0]
+        #classification = classification[0]
+        #detections     = detections[0]
 
         scores = keras.backend.max(classification, axis=1)
 
@@ -102,7 +107,7 @@ class NonMaximumSuppression(keras.layers.Layer):
         indices = backend.non_max_suppression(boxes, scores, max_output_size=self.max_boxes, iou_threshold=self.nms_threshold)
 
         detections = keras.backend.gather(detections, indices)
-        return keras.backend.expand_dims(detections, axis=0)
+        return detections
 
     def compute_output_shape(self, input_shape):
         return (input_shape[2][0], None, input_shape[2][2])
