@@ -111,7 +111,7 @@ def _read_openem_annotations(csv_reader, classes):
             raise_from(ValueError('line {}: format should be \'img_file,x1,y1,w,h,theta,species_id\' or \'img_file,,,,,,\''.format(line)), None)
 
         # If frame isn't supplied we have an image as input
-        if frame = '':
+        if frame == '':
             img_file = img_id
         else:
             f_jpeg = "{:04}.jpg".format(frame)
