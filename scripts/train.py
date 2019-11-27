@@ -265,7 +265,7 @@ def parse_args():
     for cousin in [csv_parser, openem_parser]:
         cousin.add_argument('annotations', help='Path to CSV file containing annotations for training.')
         cousin.add_argument('classes', help='Path to a CSV file containing class label mapping.')
-        cousin.add_argument('mean_image',help='Path to mean image of data set to subtract (optional).')
+        cousin.add_argument('--mean_image',help='Path to mean image of data set to subtract (optional).')
         cousin.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
         cousin.add_argument('--image_min_side', default=1080, help='Length of minimum image side. Image will be scaled to this')
         cousin.add_argument('--image_max_side', default=1920, help='Length of maximum image side. Image will be scaled to this')
