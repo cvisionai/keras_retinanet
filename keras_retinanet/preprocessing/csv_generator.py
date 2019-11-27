@@ -55,6 +55,19 @@ def _read_classes(csv_reader):
         result[class_name] = class_id
     return result
 
+def _read_openem_classes(csv_reader):
+    result = []
+    for line, row in enumerate(csv_reader):
+        try:
+            class_name = row
+        except ValueError:
+            raise_from(ValueError('line {}: format should be \'class_name,\''.format(line)), None)
+
+        if class_name in result:
+            raise ValueError('line {}: duplicate class name: \'{}\''.format(line, class_name))
+        result.append(class_name)
+    return result
+
 
 def _read_annotations(csv_reader, classes):
     result = {}
@@ -255,7 +268,7 @@ class OpenEMGenerator(CSVGenerator):
         # parse the provided class file
         try:
             with _open_for_csv(csv_class_file) as file:
-                self.classes = _read_classes(csv.reader(file, delimiter=','))
+                self.classes = _read_openem_classes(csv.reader(file, delimiter=','))
         except ValueError as e:
             raise_from(ValueError('invalid CSV class file: {}: {}'.format(csv_class_file, e)), None)
 
