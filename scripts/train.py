@@ -190,20 +190,6 @@ def create_generators(args,group_queue):
             val_image_data_generator,
             batch_size=args.batch_size
         )
-    elif args.dataset_type == 'openem':
-        if args.train_img_dir == None:
-            raise Exception('ERROR: must supply train_img_dir for openem mode')
-        train_generator = OpenEMGenerator(
-            args.annotations,
-            args.classes,
-            args.mean_image,
-            train_image_data_generator,
-            base_dir=args.train_img_dir,
-            batch_size=args.batch_size,
-            image_min_side=int(args.image_min_side),
-            image_max_side=int(args.image_max_side),
-            group_queue=group_queue
-        )
     elif args.dataset_type == 'csv':
         train_generator = CSVGenerator(
             args.annotations,
@@ -261,14 +247,12 @@ def parse_args():
     pascal_parser.add_argument('pascal_path', help='Path to dataset directory (ie. /tmp/VOCdevkit).')
 
     csv_parser = subparsers.add_parser('csv')
-    openem_parser = subparsers.add_parser('openem')
-    for cousin in [csv_parser, openem_parser]:
-        cousin.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-        cousin.add_argument('classes', help='Path to a CSV file containing class label mapping.')
-        cousin.add_argument('--mean_image',help='Path to mean image of data set to subtract (optional).')
-        cousin.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
-        cousin.add_argument('--image_min_side', default=1080, help='Length of minimum image side. Image will be scaled to this')
-        cousin.add_argument('--image_max_side', default=1920, help='Length of maximum image side. Image will be scaled to this')
+    csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
+    csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
+    csv_parser.add_argument('--mean_image',help='Path to mean image of data set to subtract (optional).')
+    csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
+    csv_parser.add_argument('--image_min_side', default=1080, help='Length of minimum image side. Image will be scaled to this')
+    csv_parser.add_argument('--image_max_side', default=1920, help='Length of maximum image side. Image will be scaled to this')
 
     parser.add_argument('--weights', help='Weights to use for initialization (defaults to ImageNet).', default='imagenet')
     parser.add_argument('--train_img_dir', help='Path to training images')
