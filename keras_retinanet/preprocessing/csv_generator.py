@@ -114,7 +114,10 @@ class CSVGenerator(Generator):
         self.image_names = []
         self.image_data  = {}
         self.base_dir    = base_dir
-        self.mean_image = np.load(mean_image_file)
+        if mean_image_file:
+            self.mean_image = np.load(mean_image_file)
+        else:
+            self.mean_image = None
 
         # Take base_dir from annotations file if not explicitly specified.
         if self.base_dir is None:
