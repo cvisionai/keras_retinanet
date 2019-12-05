@@ -121,18 +121,18 @@ def create_callbacks(
         evaluation = keras_retinanet.callbacks.coco.CocoEval(validation_generator)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
-    
+
     lr_scheduler = keras.callbacks.ReduceLROnPlateau(
-        monitor='loss',
-        factor=0.1,
-        patience=3,
-        verbose=1,
-        mode='min',
-        min_delta=0.01,
-        cooldown=0,
-        min_lr=1e-8)
+        monitor=args.lr_monitor,
+        factor=args.lr_factor,
+        patience=args.lr_patience,
+        verbose=args.lr_verbose,
+        mode=args.lr_mode,
+        min_delta=args.lr_min_delta,
+        cooldown=args.lr_cooldown,
+        min_lr=args.lr_min_lr)
     callbacks.append(lr_scheduler)
-    
+
     return callbacks
 
 
@@ -259,6 +259,21 @@ def parse_args():
     parser.add_argument('--num_processors', type=int, default=8, help='Number of image preprocessing objects')
     parser.add_argument('--resume', action='store_true', help='Adjust learning parameters for resume or transfer learning')
     parser.add_argument('--num_channels', type=int, default=3, help='Number of channels in input images')
+    parser.add_argument('--steps-per-epoch', type=int, required=True, help='Should be #imgs / batch size')
+    parser.add_argument('--epochs', type=int, default=50, help='Number of epochs')
+    parser.add_argument('--verbosity', type=int, default=1, choices=[0,1,2], help='verbosity to fit generator')
+
+    # Parameters for LR scheduler
+    parser.add_argument('--lr-monitor', default='loss', help='Quantity to be monitored')
+    parser.add_argument('--lr-factor', default=0.1, help='Factor by which the learning rate will be reduced. new_lr = lr * factor')
+    parser.add_argument('--lr-patience', default=3, help="number of epochs that produced the monitored quantity with no improvement after which training will be stopped. Validation quantities may not be produced for every epoch, if the validation frequency (model.fit(validation_freq=5)) is greater than one.")
+    parser.add_argument('--lr-verbose', default=1, choices=[1,2], help='update messages')
+    parser.add_argument('--lr-mode', default='min', choices=['min','max','auto'],
+                         help="In min mode, lr will be reduced when the quantity monitored has stopped decreasing; in max mode it will be reduced when the quantity monitored has stopped increasing; in auto mode, the direction is automatically inferred from the name of the monitored quantity.")
+    parser.add_argument('--lr-min-delta', default=0.01, help="threshold for measuring the new optimum, to only focus on significant changes.")
+    parser.add_argument('--lr-cooldown', default=0, help="number of epochs to wait before resuming normal operation after lr has been reduced.")
+    parser.add_argument('--lr-min-lr', default=1e-8, help="lower bound on the learning rate.")
+
 
     return check_args(parser.parse_args())
 
@@ -280,9 +295,9 @@ if __name__ == '__main__':
     # create the model
     print('Creating model, this may take a second...')
     model, training_model, prediction_model = create_models(
-            num_classes=train_generator.num_classes(), 
-            weights=args.weights, 
-            multi_gpu=args.multi_gpu, 
+            num_classes=train_generator.num_classes(),
+            weights=args.weights,
+            multi_gpu=args.multi_gpu,
             checkpoint=args.resume,
             num_channels=args.num_channels)
 
@@ -295,13 +310,12 @@ if __name__ == '__main__':
     # start training
     training_model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=423,
-        epochs=200,
-        verbose=1,
+        steps_per_epoch=args.steps_per_epoch,
+        epochs=args.epochs,
+        verbose=args.verbosity,
         callbacks=callbacks,
         use_multiprocessing=False,
         workers=args.num_processors,
         max_queue_size = 30,
         validation_data=validation_generator
     )
-
