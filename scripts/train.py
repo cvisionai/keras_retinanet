@@ -192,7 +192,7 @@ def create_generators(args):
             image_min_side=int(args.image_min_side),
             image_max_side=int(args.image_max_side),
             num_channels=args.num_channels,
-            base_dir=args.train_image_dir
+            base_dir=args.train_img_dir
         )
 
         if args.val_annotations:
