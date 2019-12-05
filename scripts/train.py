@@ -191,7 +191,8 @@ def create_generators(args):
             batch_size=args.batch_size,
             image_min_side=int(args.image_min_side),
             image_max_side=int(args.image_max_side),
-            num_channels=args.num_channels
+            num_channels=args.num_channels,
+            base_dir=args.train_image_dir
         )
 
         if args.val_annotations:
@@ -262,6 +263,7 @@ def parse_args():
     parser.add_argument('--steps-per-epoch', type=int, required=True, help='Should be #imgs / batch size')
     parser.add_argument('--epochs', type=int, default=50, help='Number of epochs')
     parser.add_argument('--verbosity', type=int, default=1, choices=[0,1,2], help='verbosity to fit generator')
+    parser.add_argument('--train-img-dir', help='Path to images')
 
     # Parameters for LR scheduler
     parser.add_argument('--lr-monitor', default='loss', help='Quantity to be monitored')
