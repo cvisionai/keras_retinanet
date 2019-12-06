@@ -223,7 +223,7 @@ def bb_intersection_over_union(boxA, boxB):
     # return the intersection over union value
     return iou
 
-def resizeAndFill(image, desired_shape):
+def resize_and_fill(image, desired_shape):
     """
     Resize an image to a desired shape (height,width) and maintaining
     the aspect ratio. Fill any extra areas with black.
