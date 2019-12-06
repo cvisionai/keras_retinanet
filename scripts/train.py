@@ -192,7 +192,8 @@ def create_generators(args):
             image_min_side=int(args.image_min_side),
             image_max_side=int(args.image_max_side),
             num_channels=args.num_channels,
-            base_dir=args.train_img_dir
+            base_dir=args.train_img_dir,
+            force_aspect_ratio=args.force_aspect_ratio
         )
 
         if args.val_annotations:
@@ -204,7 +205,9 @@ def create_generators(args):
                 batch_size=args.batch_size,
                 image_min_side=int(args.image_min_side),
                 image_max_side=int(args.image_max_side),
-                num_channels=args.num_channels
+                num_channels=args.num_channels,
+                base_dir=args.train_img_dir,
+                force_aspect_ratio=args.force_aspect_ratio
             )
         else:
             validation_generator = None
@@ -250,6 +253,7 @@ def parse_args():
     csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
     csv_parser.add_argument('--image_min_side', default=1080, help='Length of minimum image side. Image will be scaled to this')
     csv_parser.add_argument('--image_max_side', default=1920, help='Length of maximum image side. Image will be scaled to this')
+    csv_parser.add_argument('--force-aspect-ratio', help='Force a given aspect ratio prior to resizing')
 
     parser.add_argument('--weights', help='Weights to use for initialization (defaults to ImageNet).', default='imagenet')
     parser.add_argument('--batch-size', help='Size of the batches.', default=1, type=int)

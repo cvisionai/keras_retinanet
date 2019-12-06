@@ -19,10 +19,11 @@ import random
 import threading
 import time
 import warnings
+import math
 
 import keras
 
-from ..utils.image import preprocess_image, preprocess_mono_image, preprocess_gray_image, resize_image, random_transform
+from ..utils.image import preprocess_image, preprocess_mono_image, preprocess_gray_image, resize_image, random_transform, resize_and_fill
 from ..utils.anchors import anchor_targets_bbox
 
 
@@ -35,6 +36,7 @@ class Generator(keras.utils.Sequence):
         shuffle_groups=True,
         image_min_side=1080,
         image_max_side=1920,
+        force_aspect_ratio=None,
         seed=None
     ):
         self.image_data_generator = image_data_generator
@@ -43,6 +45,7 @@ class Generator(keras.utils.Sequence):
         self.shuffle_groups       = shuffle_groups
         self.image_min_side       = image_min_side
         self.image_max_side       = image_max_side
+        self.force_aspect_ratio   = force_aspect_ratio
 
         if seed is None:
             seed = np.uint32((time.time() % 1)) * 1000
@@ -112,6 +115,25 @@ class Generator(keras.utils.Sequence):
     def load_image_group(self, group):
         return [self.load_image(image_index) for image_index in group]
 
+    def force_aspect(self, image):
+        """ Given an image; force it to be given aspect ratio prior to resizing """
+        img_height = image.shape[0]
+        img_width = image.shape[1]
+        img_aspect = img_width / img_height
+        if img_aspect < self.force_aspect_ratio:
+            # This is when the image is boxier than the aspect ratio
+            # so we add a black bar at the right side to compensate
+            # this added bar does not effect annotation coordinates
+            new_img_width = round(img_height * img_aspect)
+            image,sf = resize_and_fill(image, (img_height, new_img_width))
+        else:
+            # This is when the image is narrower than the aspect ratio
+            # so we add a black bar at the bottom to compensate
+            # this added bar does not effect annotation coordinates
+            new_img_height = round(img_width / img_aspect)
+            image,sf = resize_and_fill(image, (new_img_height, img_width))
+        assert math.isclose(sf[0],1.0) and math.isclose(sf[1],1.0)
+        return image
     def resize_image(self, image):
         return resize_image(image, min_side=self.image_min_side, max_side=self.image_max_side)
 
@@ -134,6 +156,12 @@ class Generator(keras.utils.Sequence):
 
         # preprocess the image
         image = self.preprocess_image(image)
+
+        # force aspect ratio prior to resizing
+        if self.force_aspect_ratio:
+            aspect_ratio = self.image_max_side / self.image_min_side
+            if not math.isclose(aspect_ratio, self.force_aspect_ratio):
+                image = self.force_aspect(image)
 
         # resize image
         image, image_scale = self.resize_image(image)
