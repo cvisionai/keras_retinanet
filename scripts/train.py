@@ -109,7 +109,7 @@ def create_callbacks(
     checkpoint = keras.callbacks.ModelCheckpoint(
         os.path.join(
             snapshot_path,
-            'resnet50_{dataset_type}_{{epoch:02d}}.h5'.format(dataset_type=dataset_type)
+            '{backbone}_{dataset_type}_{{epoch:02d}}.h5'.format(backbone=args.backbone,dataset_type=dataset_type)
         ),
         verbose=1
     )
