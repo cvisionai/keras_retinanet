@@ -19,6 +19,7 @@ import os
 import keras
 import keras.preprocessing.image
 from keras.utils import multi_gpu_model
+import sys
 
 import tensorflow as tf
 
@@ -27,7 +28,8 @@ import keras_retinanet.layers
 from keras_retinanet.callbacks import RedirectModel
 from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.models.resnet import ResNet50RetinaNet
+from keras_retinanet.models.resnet import ResNet18RetinaNet, ResNet50RetinaNet
+from keras_retinanet.models.resnet import ResNet101RetinaNet,ResNet152RetinaNet
 from keras_retinanet.utils.keras_version import check_keras_version
 from keras_retinanet.utils.transform import random_transform_generator
 
@@ -37,19 +39,33 @@ def get_session():
     return tf.Session(config=config)
 
 
-def create_models(num_classes, weights='imagenet', multi_gpu=0, checkpoint=False, num_channels=3):
+def create_models(num_classes, backbone, weights='imagenet', multi_gpu=0, checkpoint=False, num_channels=3):
     # create "base" model (no NMS)
+    # backbone is a string matching the choices in the argparse
     image = keras.layers.Input((None, None, num_channels))
     if (weights == 'None') or (weights == None):
         weights = None
     # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
     # optionally wrap in a parallel model
+
+    if backbone == "resnet18":
+        ModelClass = ResNet18RetinaNet
+    elif backbone == "resnet50":
+        ModelClass = ResNet50RetinaNet
+    elif backbone == "resnet101":
+        ModelClass = ResNet101RetinaNet
+    elif backbone == "resnet152":
+        ModelClass = ResNet152RetinaNet
+    else:
+        print("Invalid backbone selected!")
+        sys.exit(-1)
+
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+            model = ModelClass(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model = ResNet50RetinaNet(image, num_classes=num_classes, weights=weights, nms=False)
+        model = ModelClass(image, num_classes=num_classes, weights=weights, nms=False)
         training_model = model
 
     # append NMS for prediction only
@@ -269,6 +285,8 @@ def parse_args():
     parser.add_argument('--verbosity', type=int, default=1, choices=[0,1,2], help='verbosity to fit generator')
     parser.add_argument('--train-img-dir', help='Path to images')
 
+    parser.add_argument('--backbone', default="resnet50", choices=["resnet18", "resnet50","resnet101","resnet152"])
+
     # Parameters for LR scheduler
     parser.add_argument('--lr-monitor', default='loss', help='Quantity to be monitored')
     parser.add_argument('--lr-factor', default=0.1, help='Factor by which the learning rate will be reduced. new_lr = lr * factor')
@@ -302,6 +320,7 @@ if __name__ == '__main__':
     print('Creating model, this may take a second...')
     model, training_model, prediction_model = create_models(
             num_classes=train_generator.num_classes(),
+            backbone=args.backbone,
             weights=args.weights,
             multi_gpu=args.multi_gpu,
             checkpoint=args.resume,
