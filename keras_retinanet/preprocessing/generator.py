@@ -45,7 +45,7 @@ class Generator(keras.utils.Sequence):
         self.shuffle_groups       = shuffle_groups
         self.image_min_side       = image_min_side
         self.image_max_side       = image_max_side
-        self.force_aspect_ratio   = force_aspect_ratio
+        self.force_aspect_ratio   = float(force_aspect_ratio)
 
         if seed is None:
             seed = np.uint32((time.time() % 1)) * 1000
