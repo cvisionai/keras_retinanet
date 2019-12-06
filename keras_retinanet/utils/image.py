@@ -245,7 +245,7 @@ def resize_and_fill(image, desired_shape):
                            desired_width/image_width)
     new_height=int(image_height*growth_factor)
     new_width=int(image_width*growth_factor)
-    image_resized=transform.resize(image,(new_height,new_width),anti_aliasing=True)
+    image_resized,_=resize_image(image,new_height,new_width)
     added_rows=desired_height-new_height
     added_cols=desired_width-new_width
 
