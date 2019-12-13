@@ -128,13 +128,13 @@ class Generator(keras.utils.Sequence):
             # This is when the image is boxier than the aspect ratio
             # so we add a black bar at the right side to compensate
             # this added bar does not effect annotation coordinates
-            new_img_width = round(img_height * img_aspect)
+            new_img_width = round(img_height * self.force_aspect_ratio)
             image,sf = resize_and_fill(image, (img_height, new_img_width))
         else:
             # This is when the image is narrower than the aspect ratio
             # so we add a black bar at the bottom to compensate
             # this added bar does not effect annotation coordinates
-            new_img_height = round(img_width / img_aspect)
+            new_img_height = round(img_width / self.force_aspect_ratio)
             image,sf = resize_and_fill(image, (new_img_height, img_width))
         assert math.isclose(sf[0],1.0) and math.isclose(sf[1],1.0)
         return image
