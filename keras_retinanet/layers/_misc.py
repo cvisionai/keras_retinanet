@@ -76,10 +76,11 @@ class Anchors(keras.layers.Layer):
 
 
 class NonMaximumSuppression(keras.layers.Layer):
-    def __init__(self, nms_threshold=0.4, top_k=None, max_boxes=300, *args, **kwargs):
+    def __init__(self, nms_threshold=0.4, top_k=None, max_boxes=300, soft_nms_sigma=0.70, *args, **kwargs):
         self.nms_threshold = nms_threshold
         self.top_k         = top_k
         self.max_boxes     = max_boxes
+        self.soft_nms_sigma = soft_nms_sigma
         super(NonMaximumSuppression, self).__init__(*args, **kwargs)
 
     def call(self, inputs, **kwargs):
@@ -96,6 +97,7 @@ class NonMaximumSuppression(keras.layers.Layer):
         #detections     = detections[0]
 
         scores = keras.backend.max(classification, axis=1)
+        labels = keras.backend.argmax(classification,axis=1)
 
         # selecting best anchors theoretically improves speed at the cost of minor performance
         if self.top_k:
@@ -104,13 +106,21 @@ class NonMaximumSuppression(keras.layers.Layer):
             classification  = keras.backend.gather(classification, indices)
             detections      = keras.backend.gather(detections, indices)
 
-        indices = backend.non_max_suppression(boxes, scores, max_output_size=self.max_boxes, iou_threshold=self.nms_threshold)
+        indices, scores = backend.non_max_suppression_with_scores(boxes, scores, max_output_size=self.max_boxes,
+                                                          iou_threshold=self.nms_threshold,
+                                                          soft_nms_sigma=self.soft_nms_sigma)
 
         detections = keras.backend.gather(detections, indices)
-        return detections
+        # Really need to replace the max score for classification vector
+        expanded_scores = keras.backend.expand_dims(scores, axis=1)
+        labels = keras.backend.gather(labels, indices)
+        expanded_labels = keras.backend.expand_dims(labels, axis=1)
+        detections_with_new_scores = keras.backend.concatenate([detections[:,:4], expanded_scores, expanded_labels], axis=1)
+        return detections_with_new_scores
 
     def compute_output_shape(self, input_shape):
-        return (input_shape[2][0], None, input_shape[2][2])
+        # Output bounding box(4), score(1), and label(1) (6 elements per row)
+        return (input_shape[2][0], None, 6)
 
     def get_config(self):
         config = super(NonMaximumSuppression, self).get_config()
