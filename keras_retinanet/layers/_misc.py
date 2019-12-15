@@ -105,6 +105,7 @@ class NonMaximumSuppression(keras.layers.Layer):
             boxes           = keras.backend.gather(boxes, indices)
             classification  = keras.backend.gather(classification, indices)
             detections      = keras.backend.gather(detections, indices)
+            labels = keras.backend.gather(labels, indices)
 
         indices, scores = backend.non_max_suppression_with_scores(boxes, scores, max_output_size=self.max_boxes,
                                                           iou_threshold=self.nms_threshold,
@@ -114,6 +115,7 @@ class NonMaximumSuppression(keras.layers.Layer):
         # Really need to replace the max score for classification vector
         expanded_scores = keras.backend.expand_dims(scores, axis=1)
         labels = keras.backend.gather(labels, indices)
+        labels = keras.backend.cast(labels, 'float32')
         expanded_labels = keras.backend.expand_dims(labels, axis=1)
         detections_with_new_scores = keras.backend.concatenate([detections[:,:4], expanded_scores, expanded_labels], axis=1)
         return detections_with_new_scores
