@@ -191,13 +191,13 @@ if __name__ == '__main__':
 
         # compute predicted labels and scores
         for detection in detections[0, ...]:
-            label = np.argmax(detection[4:])
+            label = int(detection[4])
             if float(detection[4 + label]) > args.score_threshold:
                 image_result = {
                     'frame'       : frame,
                     'category_id' : label,
                     'scores'      : [float(det) for i,det in
-                                      enumerate(detection) if i >=4],
+                                      enumerate(detection) if i >=5],
                     'bbox'        : (detection[:4]).tolist(),
                 }
                 # append detection to results
