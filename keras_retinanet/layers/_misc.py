@@ -91,38 +91,40 @@ class NonMaximumSuppression(keras.layers.Layer):
         boxes = detections[:,:4]
         classification = detections[:,4:]
 
-        # TODO: support batch size > 1.
-        #boxes          = boxes[0]
-        #classification = classification[0]
-        #detections     = detections[0]
-
         scores = keras.backend.max(classification, axis=1)
-        labels = keras.backend.argmax(classification,axis=1)
-
         # selecting best anchors theoretically improves speed at the cost of minor performance
         if self.top_k:
             scores, indices = backend.top_k(scores, self.top_k, sorted=False)
             boxes           = keras.backend.gather(boxes, indices)
             classification  = keras.backend.gather(classification, indices)
             detections      = keras.backend.gather(detections, indices)
-            labels = keras.backend.gather(labels, indices)
 
-        indices, scores = backend.non_max_suppression_with_scores(boxes, scores, max_output_size=self.max_boxes,
-                                                          iou_threshold=self.nms_threshold,
-                                                          soft_nms_sigma=self.soft_nms_sigma)
+        indices, new_scores = backend.non_max_suppression_with_scores(
+            boxes,
+            scores,
+            max_output_size=self.max_boxes,
+            iou_threshold=self.nms_threshold,
+            soft_nms_sigma=self.soft_nms_sigma)
 
         detections = keras.backend.gather(detections, indices)
-        # Really need to replace the max score for classification vector
-        expanded_scores = keras.backend.expand_dims(scores, axis=1)
-        labels = keras.backend.gather(labels, indices)
-        labels = keras.backend.cast(labels, 'float32')
-        expanded_labels = keras.backend.expand_dims(labels, axis=1)
-        detections_with_new_scores = keras.backend.concatenate([detections[:,:4], expanded_scores, expanded_labels], axis=1)
+
+        # Degrade the classification vector
+        classification = detections[:,4:]
+        label = keras.backend.argmax(classification,axis=1)
+        label = keras.backend.cast(label, 'float32')
+        degrade_scale = new_scores / scores
+        scaled_classification = classification * degrade_scale
+
+        expanded_classification = keras.backend.expand_dims(scaled_classification, axis=1)
+        expanded_label = keras.backend.expand_dims(label, axis=1)
+        detections_with_new_scores = keras.backend.concatenate([detections[:,:4], expanded_label, expanded_classification], axis=1)
         return detections_with_new_scores
 
     def compute_output_shape(self, input_shape):
-        # Output bounding box(4), score(1), and label(1) (6 elements per row)
-        return (input_shape[2][0], None, 6)
+        # Output bounding box(4), label(1), classification_vector(N)
+        # where N is number of species
+        # bounding box is in p1,p2 format of the diagonols
+        return (input_shape[2][0], None, input_shape[2][2]+1)
 
     def get_config(self):
         config = super(NonMaximumSuppression, self).get_config()
@@ -231,4 +233,3 @@ class DropoutBayes(keras.layers.Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape
-
