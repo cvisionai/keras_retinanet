@@ -115,9 +115,8 @@ class NonMaximumSuppression(keras.layers.Layer):
         degrade_scale = new_scores / scores
         scaled_classification = classification * degrade_scale
 
-        expanded_classification = keras.backend.expand_dims(scaled_classification, axis=1)
         expanded_label = keras.backend.expand_dims(label, axis=1)
-        detections_with_new_scores = keras.backend.concatenate([detections[:,:4], expanded_label, expanded_classification], axis=1)
+        detections_with_new_scores = keras.backend.concatenate([detections[:,:4], expanded_label, scaled_classification], axis=1)
         return detections_with_new_scores
 
     def compute_output_shape(self, input_shape):
