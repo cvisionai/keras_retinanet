@@ -107,12 +107,12 @@ class NonMaximumSuppression(keras.layers.Layer):
             soft_nms_sigma=self.soft_nms_sigma)
 
         detections = keras.backend.gather(detections, indices)
-
+        original_scores = keras.backend.gather(scores, indices)
         # Degrade the classification vector
         classification = detections[:,4:]
         label = keras.backend.argmax(classification,axis=1)
         label = keras.backend.cast(label, 'float32')
-        degrade_scale = new_scores / scores
+        degrade_scale = new_scores / original_scores
         scaled_classification = classification * degrade_scale
 
         expanded_label = keras.backend.expand_dims(label, axis=1)
