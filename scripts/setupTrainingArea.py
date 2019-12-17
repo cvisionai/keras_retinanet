@@ -95,10 +95,9 @@ if __name__=="__main__":
                        'x2': x2,
                        'y2': y2,
                        'species_name': species_name}
-                local_df = local_df.append(
-                    pd.DataFrame(data=[datum],
-                                 columns=cols))
-                local_df.to_csv(annotations_output,
+                datum_df = pd.DataFrame(data=[datum],
+                                 columns=cols)
+                datum_df.to_csv(annotations_output,
                                 mode='a',
                                 header=False,
                                 index=False)
