@@ -92,11 +92,16 @@ if __name__=="__main__":
                     species_name = args.squash_species_name
                 else:
                     species_name = localization['attributes'][args.keyname]
+
+                x1 = max(x1,0)
+                x2 = min(x2, media_element['width'])
+                y1 = max(x1,0)
+                y2 = min(y2, media_element['height'])
                 datum={'img': rel_image_path,
-                       'x1': x1,
-                       'y1': y1,
-                       'x2': x2,
-                       'y2': y2,
+                       'x1': round(x1),
+                       'y1': round(y1),
+                       'x2': round(x2),
+                       'y2': round(y2),
                        'species_name': species_name}
                 datum_df = pd.DataFrame(data=[datum],
                                  columns=cols)
