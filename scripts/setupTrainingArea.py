@@ -57,7 +57,7 @@ if __name__=="__main__":
 
 
     # generate annotations.csv
-    annotations_output=os.path.join(args.output_dir, "annotations.csv")
+    annotations_output=os.path.join(args.output_dir, "totalPopulation.csv")
     # output is img, x1,y1,x2,y2,species-id-0
     images_dir=os.path.join(args.output_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
@@ -78,6 +78,9 @@ if __name__=="__main__":
             if not os.path.exists(image_path):
                 tator.Media.downloadFile(media_element, image_path)
             rel_image_path = os.path.relpath(image_path, images_dir)
+            if localizations is None:
+                print(f"{media_element['name']}({media_element['id']}) has no localizations")
+                continue
             for localization in localizations:
                 x1 = localization['x'] * media_element['width']
                 y1 = localization['y'] * media_element['height']
