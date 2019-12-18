@@ -76,7 +76,7 @@ class Anchors(keras.layers.Layer):
 
 
 class NonMaximumSuppression(keras.layers.Layer):
-    def __init__(self, nms_threshold=0.4, top_k=None, max_boxes=300, soft_nms_sigma=0.70, *args, **kwargs):
+    def __init__(self, nms_threshold=0.4, top_k=None, max_boxes=300, soft_nms_sigma=0.00, *args, **kwargs):
         self.nms_threshold = nms_threshold
         self.top_k         = top_k
         self.max_boxes     = max_boxes
