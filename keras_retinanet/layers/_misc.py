@@ -113,7 +113,10 @@ class NonMaximumSuppression(keras.layers.Layer):
         label = keras.backend.argmax(classification,axis=1)
         label = keras.backend.cast(label, 'float32')
         degrade_scale = new_scores / original_scores
-        scaled_classification = classification * degrade_scale
+        
+        # Need to expand to have tensorflow support the broadcast multiplication
+        expanded_degrade=keras.backend.expand_dims(degrade_scale, axis=1)
+        scaled_classification = classification * expanded_degrade
 
         expanded_label = keras.backend.expand_dims(label, axis=1)
         detections_with_new_scores = keras.backend.concatenate([detections[:,:4], expanded_label, scaled_classification], axis=1)
