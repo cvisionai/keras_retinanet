@@ -289,14 +289,14 @@ def parse_args():
 
     # Parameters for LR scheduler
     parser.add_argument('--lr-monitor', default='loss', help='Quantity to be monitored')
-    parser.add_argument('--lr-factor', default=0.1, help='Factor by which the learning rate will be reduced. new_lr = lr * factor')
-    parser.add_argument('--lr-patience', default=3, help="number of epochs that produced the monitored quantity with no improvement after which training will be stopped. Validation quantities may not be produced for every epoch, if the validation frequency (model.fit(validation_freq=5)) is greater than one.")
+    parser.add_argument('--lr-factor', default=0.1, type=float, help='Factor by which the learning rate will be reduced. new_lr = lr * factor')
+    parser.add_argument('--lr-patience', default=3, type=int, help="number of epochs that produced the monitored quantity with no improvement after which training will be stopped. Validation quantities may not be produced for every epoch, if the validation frequency (model.fit(validation_freq=5)) is greater than one.")
     parser.add_argument('--lr-verbose', default=1, choices=[1,2], help='update messages')
     parser.add_argument('--lr-mode', default='min', choices=['min','max','auto'],
                          help="In min mode, lr will be reduced when the quantity monitored has stopped decreasing; in max mode it will be reduced when the quantity monitored has stopped increasing; in auto mode, the direction is automatically inferred from the name of the monitored quantity.")
-    parser.add_argument('--lr-min-delta', default=0.01, help="threshold for measuring the new optimum, to only focus on significant changes.")
-    parser.add_argument('--lr-cooldown', default=0, help="number of epochs to wait before resuming normal operation after lr has been reduced.")
-    parser.add_argument('--lr-min-lr', default=1e-8, help="lower bound on the learning rate.")
+    parser.add_argument('--lr-min-delta', default=0.01, help="threshold for measuring the new optimum, to only focus on significant changes.", type=float)
+    parser.add_argument('--lr-cooldown', default=0, help="number of epochs to wait before resuming normal operation after lr has been reduced.", type=float)
+    parser.add_argument('--lr-min-lr', default=1e-8, help="lower bound on the learning rate.", type=float)
 
 
     return check_args(parser.parse_args())
