@@ -180,7 +180,17 @@ class CSVGenerator(Generator):
             'mono': read_image_as_grayscale
         }
 
-        img = image_loaders[self.image_type](self.image_path(image_index))
+        try:
+            img_path = self.image_path(image_index)
+            img = image_loaders[self.image_type](img_path)
+        except Exception as e:
+            print(f"Couldn't load {img_path}, trying again.")
+            try:
+                time.sleep(5.0)
+                img = image_loaders[self.image_type](img_path)
+            except:
+                print("Still failed!")
+                raise e
         return img
 
     def load_annotations(self, image_index):
