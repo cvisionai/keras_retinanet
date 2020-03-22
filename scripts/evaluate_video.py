@@ -140,7 +140,7 @@ if __name__ == '__main__':
     # optionally choose specific GPU
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    keras.backend.tensorflow_backend.set_session(get_session())
+    #keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the model
     print('Loading model, this may take a second...')

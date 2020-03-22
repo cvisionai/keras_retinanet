@@ -23,7 +23,7 @@ def top_k(*args, **kwargs):
 
 
 def resize_images(*args, **kwargs):
-    return tensorflow.image.resize_images(*args, **kwargs)
+    return tensorflow.image.resize(*args, **kwargs)
 
 
 def non_max_suppression(*args, **kwargs):
