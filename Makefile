@@ -30,4 +30,4 @@ dev_bash:
 	$(docker_cmd) --name $(retinanet_container_name) --rm -ti --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 -v `pwd`/../deploy_python:/deploy_python $(extra_mounts) cvisionai/keras-retinanet:$(USER)
 publish:
 	docker tag cvisionai/keras-retinanet:$(USER) cvisionai/keras-retinanet:latest
-    docker push cvisionai/keras-retinanet:latest
+	docker push cvisionai/keras-retinanet:latest
