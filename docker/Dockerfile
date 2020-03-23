@@ -4,6 +4,8 @@ FROM nvcr.io/nvidia/tensorflow:20.02-tf2-py3
 RUN apt-get update && apt-get install -y --no-install-recommends \
 vim build-essential cmake autoconf automake autopoint libglib2.0-dev libtool libsm6 libxrender-dev libxext6 && apt-get clean && rm -fr /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir keras==2.3.1
+
 # Install keras_retinanet
 COPY . /keras_retinanet/.
 WORKDIR /keras_retinanet
