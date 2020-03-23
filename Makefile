@@ -1,7 +1,7 @@
 USER=$(shell whoami)
 .PHONY: build
 build: 
-    docker build -t cvisionai/keras-retinanet:$(USER) -f docker/Dockerfile . || exit 255
+	docker build -t cvisionai/keras-retinanet:$(USER) -f docker/Dockerfile . || exit 255
 
 ifeq ($(work_dir), )
 extra_mounts=
@@ -23,10 +23,11 @@ else
 docker_cmd=docker run --gpus device=$(retinanet_gpu)
 endif
 ifndef retinanet_container_name
-retinanet_container_name=$(container_name)_gpu_$(openem_gpu)
+retinanet_container_name=$(container_name)_gpu_$(retinanet_gpu)
 endif
+.PHONY: dev_bash
 dev_bash:
-    $(docker_cmd) --name $(retinanet_container_name) --rm -ti --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 -v `pwd`/../deploy_python:/deploy_python $(extra_mounts) cvisionai/keras-retinanet:$(USER)
+	$(docker_cmd) --name $(retinanet_container_name) --rm -ti --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 -v `pwd`/../deploy_python:/deploy_python $(extra_mounts) cvisionai/keras-retinanet:$(USER)
 publish:
-    docker tag cvisionai/keras-retinanet:$(USER) cvisionai/keras-retinanet:latest
+	docker tag cvisionai/keras-retinanet:$(USER) cvisionai/keras-retinanet:latest
     docker push cvisionai/keras-retinanet:latest
