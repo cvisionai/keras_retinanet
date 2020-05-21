@@ -96,10 +96,13 @@ if __name__=="__main__":
                     print(f"Saving {image_path}")
                     with open(image_path,'wb') as image_fp:
                         image_fp.write(image_data)
-                x1 = localization['x'] * media_element['width']
-                y1 = localization['y'] * media_element['height']
-                width = localization['width'] * media_element['width']
-                height = localization['height'] * media_element['height']
+                shape = media_element['media_files']['streaming'][0]['resolution']
+                img_width = shape[1]
+                img_height = shape[0]
+                x1 = localization['x'] * img_width
+                y1 = localization['y'] * img_height
+                width = localization['width'] * img_width
+                height = localization['height'] * img_height
                 x2 = x1 + width
                 y2 = y1 + height
                 if args.squash_species:
@@ -108,9 +111,9 @@ if __name__=="__main__":
                     species_name = localization['attributes'][args.keyname]
 
                 x1 = max(x1,0)
-                x2 = min(x2, media_element['width'])
-                y1 = max(x1,0)
-                y2 = min(y2, media_element['height'])
+                x2 = min(x2, img_width)
+                y1 = max(y1,0)
+                y2 = min(y2, img_height)
                 datum={'img': rel_image_path,
                        'x1': round(x1),
                        'y1': round(y1),
