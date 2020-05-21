@@ -12,7 +12,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description=
                                      "Sets up a training area from tator project")
     parser = pytator.tator.cli_parser(parser)
-    parser.add_argument("--section", nargs='+', help='sections to download', required=True)
+    parser.add_argument("--section", nargs='*', help='sections to download')
     parser.add_argument("--box-type-id", type=int, required=True)
     parser.add_argument("--keyname", default="Species", help="Key name to use for the species value in the box")
     parser.add_argument("--squash-species", action="store_true",
@@ -64,7 +64,15 @@ if __name__=="__main__":
     cols=['img', 'x1', 'y1', 'x2', 'y2', 'species_name']
     local_df=pd.DataFrame(columns=cols)
     local_df.to_csv(annotations_output, header=False,index=False)
-    for section in args.section:
+
+    if args.section:
+        sections_to_process=args.section
+    else:
+        sections_to_process=list(tator.MediaSection.all().keys())
+
+    print(f"Processing {sections_to_process}")
+
+    for section in sections_to_process:
         section_filter=f"tator_user_sections::{section}"
         medias = tator.Media.filter({'attribute': section_filter})
         section_dir=os.path.join(images_dir, section)
@@ -74,14 +82,20 @@ if __name__=="__main__":
             media_element = tator.Media.get(media['id'])
             localizations= tator.Localization.filter({"type": args.box_type_id,
                                                       "media_id": media['id']})
-            image_path = os.path.join(section_dir, media_element['name'])
-            if not os.path.exists(image_path):
-                tator.Media.downloadFile(media_element, image_path)
-            rel_image_path = os.path.relpath(image_path, images_dir)
+
             if localizations is None:
                 print(f"{media_element['name']}({media_element['id']}) has no localizations")
                 continue
             for localization in localizations:
+                frame = localization['frame']
+                image_path = os.path.join(section_dir, f"{media_element['name']}_{frame}.png")
+                rel_image_path = os.path.relpath(image_path, images_dir)
+                if not os.path.exists(image_path):
+                    # TODO Determine if image or video
+                    _,image_data = tator.GetFrame.get_encoded_img(media_element, [frame])
+                    print(f"Saving {image_path}")
+                    with open(image_path,'wb') as image_fp:
+                        image_fp.write(image_data)
                 x1 = localization['x'] * media_element['width']
                 y1 = localization['y'] * media_element['height']
                 width = localization['width'] * media_element['width']
