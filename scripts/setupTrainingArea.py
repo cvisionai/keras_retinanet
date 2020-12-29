@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-""" Sets up a training area for OD training """
+""" Sets up a training area for OD training based on localizations in video
+    or images (keyframes).
+"""
 
 import argparse
 import tator
