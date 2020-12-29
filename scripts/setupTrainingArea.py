@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 
+""" Sets up a training area for OD training """
+
 import argparse
-import pytator
+import tator
 import os
 import pandas as pd
 import progressbar
+import shutil
 
 from pprint import pprint
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description=
                                      "Sets up a training area from tator project")
-    parser = pytator.tator.cli_parser(parser)
-    parser.add_argument("--section", nargs='*', help='sections to download')
-    parser.add_argument("--box-type-id", type=int, required=True)
+    parser = tator.get_parser(parser)
+    parser.add_argument("--section", nargs='*', help='sections to download (pk)')
+    parser.add_argument("--box-type-id", type=int, help='pk of localization type to extract')
     parser.add_argument("--keyname", default="Species", help="Key name to use for the species value in the box")
     parser.add_argument("--squash-species", action="store_true",
                         help="Squash species annotations into a single class")
@@ -22,9 +25,11 @@ if __name__=="__main__":
     parser.add_argument("output_dir")
     args = parser.parse_args()
 
-    tator = pytator.Tator(args.url, args.token, args.project)
+    api = tator.get_api(args.host, args.token)
+    box_type = api.get_localization_type(args.box_type_id)
+    project = box_type.project
 
-    localizations = tator.Localization.filter({"type": args.box_type_id})
+    localizations = api.get_localization_list(project,type=args.box_type_id)
     os.makedirs(args.output_dir, exist_ok=True)
     species_output=os.path.join(args.output_dir, "species.csv")
     if args.squash_species:
@@ -37,7 +42,7 @@ if __name__=="__main__":
         # species names
         species = {}
         for localization in localizations:
-            species_name = localization['attributes'][args.keyname]
+            species_name = localization.attributes[args.keyname]
             if species_name in species:
                 species[species_name] += 1
             else:
@@ -68,34 +73,34 @@ if __name__=="__main__":
     if args.section:
         sections_to_process=args.section
     else:
-        sections_to_process=list(tator.MediaSection.all().keys())
+        sections_to_process=[x.id for x in api.get_section_list(project)]
 
     print(f"Processing {sections_to_process}")
 
     for section in sections_to_process:
-        section_filter=f"tator_user_sections::{section}"
-        medias = tator.Media.filter({'attribute': section_filter})
-        section_dir=os.path.join(images_dir, section)
+        medias = api.get_media_list(project,section=section)
+        section_obj = api.get_section(section)
+        section_dir=os.path.join(images_dir, section_obj.name)
         os.makedirs(section_dir, exist_ok=True)
         bar = progressbar.ProgressBar(redirect_stdout=True)
         for media in bar(medias):
-            media_element = tator.Media.get(media['id'])
-            localizations= tator.Localization.filter({"type": args.box_type_id,
-                                                      "media_id": media['id']})
+            media_element = media.to_dict() # for compatibility reason
+            localizations= api.get_localization_list(project,
+                                                     type=args.box_type_id,
+                                                     media_id=[media.id])
 
             if localizations is None:
                 print(f"{media_element['name']}({media_element['id']}) has no localizations")
                 continue
             for localization in localizations:
+                localization = localization.to_dict() # for compatibility reasons
                 frame = localization['frame']
                 image_path = os.path.join(section_dir, f"{media_element['name']}_{frame}.png")
                 rel_image_path = os.path.relpath(image_path, images_dir)
                 if not os.path.exists(image_path):
-                    # TODO Determine if image or video
-                    _,image_data = tator.GetFrame.get_encoded_img(media_element, [frame])
-                    print(f"Saving {image_path}")
-                    with open(image_path,'wb') as image_fp:
-                        image_fp.write(image_data)
+                    temp_path = api.get_frame(media.id,
+                                              frames=[frame])
+                    shutil.move(temp_path,image_path)
                 shape = media_element['media_files']['streaming'][0]['resolution']
                 img_width = shape[1]
                 img_height = shape[0]
