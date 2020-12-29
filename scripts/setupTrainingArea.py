@@ -77,6 +77,9 @@ if __name__=="__main__":
 
     print(f"Processing {sections_to_process}")
 
+
+    media_types = api.get_media_type_list(project)
+    type_lookup = {t.id : t.dtype for t in media_types}
     for section in sections_to_process:
         medias = api.get_media_list(project,section=section)
         section_obj = api.get_section(section)
@@ -89,6 +92,8 @@ if __name__=="__main__":
                                                      type=args.box_type_id,
                                                      media_id=[media.id])
 
+            is_video = type_lookup[media.meta] == 'video'
+
             if localizations is None:
                 print(f"{media_element['name']}({media_element['id']}) has no localizations")
                 continue
@@ -98,9 +103,13 @@ if __name__=="__main__":
                 image_path = os.path.join(section_dir, f"{media_element['name']}_{frame}.png")
                 rel_image_path = os.path.relpath(image_path, images_dir)
                 if not os.path.exists(image_path):
-                    temp_path = api.get_frame(media.id,
-                                              frames=[frame])
-                    shutil.move(temp_path,image_path)
+                    if is_video:
+                        temp_path = api.get_frame(media.id,
+                                                  frames=[frame])
+                        shutil.move(temp_path,image_path)
+                    else:
+                        for _ in tator.download_media(api, media, image_path):
+                            pass
                 shape = media_element['media_files']['streaming'][0]['resolution']
                 img_width = shape[1]
                 img_height = shape[0]
