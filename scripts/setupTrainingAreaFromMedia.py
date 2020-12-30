@@ -110,8 +110,7 @@ if __name__=="__main__":
                     shutil.copytree(os.path.join(root,media_dir),
                                     os.path.join(images_dir, media_dir))
                 for frame_image in frame_images:
-                    rel_image_path = os.path.join("images",
-                                                  os.path.basename(root),
+                    rel_image_path = os.path.join(os.path.basename(root),
                                                   frame_image)
                     datum={'img': rel_image_path,
                            'x1': args.padding,
