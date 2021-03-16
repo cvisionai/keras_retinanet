@@ -192,7 +192,7 @@ if __name__ == '__main__':
         # compute predicted labels and scores
         for detection in detections[0, ...]:
             label = int(detection[4])
-            if float(detection[4 + label]) > args.score_threshold:
+            if float(detection[5 + label]) > args.score_threshold:
                 image_result = {
                     'frame'       : frame,
                     'category_id' : label,
