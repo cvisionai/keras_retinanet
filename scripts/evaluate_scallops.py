@@ -115,7 +115,7 @@ if __name__ == '__main__':
         for detection in detections[0, ...]:
             label = int(detection[4])
             # append detections for each positively labeled class
-            if float(detection[4 + label]) > args.score_threshold:
+            if float(detection[5 + label]) > args.score_threshold:
                 image_result = {
                     'image_id'    : test_generator.image_names[i],
                     'category_id' : test_generator.label_to_name(label),
