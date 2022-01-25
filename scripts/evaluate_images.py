@@ -46,9 +46,9 @@ def get_session():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Simple training script for COCO object detection.')
+    parser = argparse.ArgumentParser(description='Simple inference script for object detection.')
     parser.add_argument('model', help='Path to RetinaNet model.')
-    parser.add_argument('test_path', help='Path to file containing list of test images')
+    parser.add_argument('test_path', help='Path to file containing list of inference images')
     parser.add_argument('class_file', help='Name of the class file to evaluate')
     parser.add_argument('--mean_image', default=None, help='Mean image file to subtract')
     parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
